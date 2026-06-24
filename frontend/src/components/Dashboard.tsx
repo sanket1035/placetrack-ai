@@ -673,26 +673,19 @@ function LoginScreen({ dark, loading, onToggleTheme, onLogin, onSignup }: {
   const [branch, setBranch] = useState("Computer Engineering");
   const [cgpa, setCgpa] = useState("7.8");
   const [selectedSkills, setSelectedSkills] = useState<string[]>(["Java", "Python", "SQL", "Communication"]);
-  const [readOnly, setReadOnly] = useState(true);
 
   useEffect(() => {
     setEmail("");
     setPassword("");
-    setReadOnly(true);
   }, [mode]);
 
   const submitAuth = () => {
     if (mode === "signup") {
-      const isDemoEmail = demoAccounts.some((account) => account.email.toLowerCase() === email.toLowerCase().trim());
-      if (isDemoEmail) {
-        alert("Demo account emails cannot be used for signup. Please use a unique email.");
-        return;
-      }
-    }
-    if (mode === "signin") {
-      onLogin(email, password);
-    } else {
+      const isDemoEmail = demoAccounts.some((a) => a.email.toLowerCase() === email.toLowerCase().trim());
+      if (isDemoEmail) { alert("Demo account emails cannot be used for signup. Use a unique email."); return; }
       onSignup({ name, email, password, branch, cgpa: Number(cgpa), skills: selectedSkills });
+    } else {
+      onLogin(email, password);
     }
   };
 
@@ -702,39 +695,38 @@ function LoginScreen({ dark, loading, onToggleTheme, onLogin, onSignup }: {
         <div className="brand"><div className="brand-mark"><Command size={20} /></div><span>PlaceTrack <b>AI</b></span></div>
         <span className="eyebrow">Campus placement command center</span>
         <h1>{mode === "signin" ? "Login and run the full workflow." : "Create a student account."}</h1>
-        <p className="section-copy">{mode === "signin" ? "Use demo accounts after seeding. Student, coordinator, and admin roles unlock different placement modules." : "Signup creates a student profile and logs you in instantly."}</p>
+        <p className="section-copy">{mode === "signin" ? "Click a demo role below to instantly sign in, or type your own credentials." : "Signup creates a student profile and logs you in instantly."}</p>
         <div className="auth-tabs">
           <button type="button" className={mode === "signin" ? "active" : ""} onClick={() => setMode("signin")}>Sign in</button>
           <button type="button" className={mode === "signup" ? "active" : ""} onClick={() => setMode("signup")}>Sign up</button>
         </div>
-        {mode === "signin" && <div className="demo-buttons" style={{ marginTop: "8px" }}>
-          {demoAccounts.map((account) => (
-            <span
-              key={account.email}
-              className="demo-btn-capsule"
-              onClick={() => {
-                setReadOnly(false);
-                setEmail(account.email);
-                setPassword(account.password);
-              }}
-            >
-              {account.label}
-            </span>
-          ))}
-        </div>}
+        {mode === "signin" && (
+          <div className="demo-buttons" style={{ marginTop: "8px" }}>
+            {demoAccounts.map((account) => (
+              <span
+                key={account.email}
+                className="demo-btn-capsule"
+                onClick={() => onLogin(account.email, account.password)}
+              >
+                {account.label}
+              </span>
+            ))}
+            <p className="helper-text" style={{ marginTop: "6px", fontSize: "11px" }}>↑ One click instant login — or fill fields below manually</p>
+          </div>
+        )}
         <div style={{ display: "grid", gap: "16px", marginTop: "8px" }}>
           {mode === "signup" && <>
-            <label>Name<input value={name} onChange={(event) => setName(event.target.value)} /></label>
+            <label>Name<input value={name} onChange={(e) => setName(e.target.value)} /></label>
             <label>Branch
-              <select value={branch} onChange={(event) => setBranch(event.target.value)}>
+              <select value={branch} onChange={(e) => setBranch(e.target.value)}>
                 {AVAILABLE_DEPARTMENTS.map((dept) => <option key={dept} value={dept}>{dept}</option>)}
               </select>
             </label>
-            <label>CGPA<input value={cgpa} onChange={(event) => setCgpa(event.target.value)} /></label>
+            <label>CGPA<input value={cgpa} onChange={(e) => setCgpa(e.target.value)} /></label>
             <SkillsSelector selected={selectedSkills} onChange={setSelectedSkills} />
           </>}
-          <label>Email<input value={email} readOnly={readOnly} onFocus={() => setReadOnly(false)} onClick={() => setReadOnly(false)} autoComplete="new-email-field" onChange={(event) => setEmail(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") submitAuth(); }} /></label>
-          <label>Password<input type="text" className="no-autofill-password" value={password} readOnly={readOnly} onFocus={() => setReadOnly(false)} onClick={() => setReadOnly(false)} autoComplete="new-password-field" onChange={(event) => setPassword(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") submitAuth(); }} /></label>
+          <label>Email<input value={email} autoComplete="off" onChange={(e) => setEmail(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") submitAuth(); }} /></label>
+          <label>Password<input type="text" className="no-autofill-password" value={password} autoComplete="off" onChange={(e) => setPassword(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") submitAuth(); }} /></label>
           <button className="primary-button" disabled={loading} type="button" onClick={submitAuth}>
             {loading ? <Loader2 className="spin" size={16} /> : <ArrowUpRight size={16} />} {mode === "signin" ? "Sign in" : "Create account"}
           </button>
