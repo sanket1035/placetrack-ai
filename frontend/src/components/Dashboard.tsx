@@ -1078,10 +1078,14 @@ function InterviewCoach({ token, flash }: { token: string; flash: (message: stri
     if (!answer) { flash("Please type an answer before submitting."); return; }
     setSubmitting((prev) => ({ ...prev, [questionText]: true }));
     try {
-      const response = await api<{ score: number; strengths: string[]; weaknesses: string[]; modelAnswer: string }>(
-        "/api/ai/interview/feedback", token,
-        { method: "POST", body: JSON.stringify({ question: questionText, answer, role: selectedRole }) }
-      );
+      // Call Next.js API route directly (works on Vercel without Express backend)
+      const res = await fetch("/api/ai/interview/feedback", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ question: questionText, answer, role: selectedRole }),
+      });
+      if (!res.ok) throw new Error("AI evaluation failed");
+      const response = await res.json() as { score: number; strengths: string[]; weaknesses: string[]; modelAnswer: string };
       setEvaluations((prev) => ({ ...prev, [questionText]: response }));
       flash("Answer evaluated by AI!");
     } catch (error) {
