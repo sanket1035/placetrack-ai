@@ -70,7 +70,31 @@ app.use((error: unknown, _request: express.Request, response: express.Response, 
   return response.status(500).json({ error: "Something went wrong" });
 });
 
-const server = app.listen(port, () => console.log(`PlaceTrack API running on http://localhost:${port}`));
+const server = app.listen(port, async () => {
+  console.log(`PlaceTrack API running on http://localhost:${port}`);
+  try {
+    const userCount = await prisma.user.count();
+    if (userCount === 0) {
+      console.log("Database is empty. Initiating database auto-seed...");
+      const { fork } = await import("child_process");
+      const path = await import("path");
+      const seedPath = path.resolve(process.cwd(), "dist/prisma/seed.js");
+      console.log(`Spawning auto-seed process at: ${seedPath}`);
+      const child = fork(seedPath);
+      child.on("exit", (code) => {
+        if (code === 0) {
+          console.log("Database auto-seeded successfully.");
+        } else {
+          console.error(`Database auto-seed failed with exit code: ${code}`);
+        }
+      });
+    } else {
+      console.log(`Database has existing data (${userCount} users). Skipping auto-seed.`);
+    }
+  } catch (error) {
+    console.error("Failed to check database/run auto-seed:", error);
+  }
+});
 const shutdown = async () => {
   server.close();
   await prisma.$disconnect();
