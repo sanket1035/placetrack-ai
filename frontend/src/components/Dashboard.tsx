@@ -854,27 +854,44 @@ function Applications({ role, token, applications, onRefresh, flash }: { role: R
 
 function Opportunities({ role, token, drives, onRefresh, onNavigate, flash, onViewDrive }: { role: Role; token: string; drives: Drive[]; onRefresh: () => void; onNavigate: (view: View) => void; flash: (message: string) => void; onViewDrive: (drive: Drive) => void }) {
   const sortedDrives = [...drives].sort((a, b) => {
+    // Applied goes last
     if (a.alreadyApplied !== b.alreadyApplied) return a.alreadyApplied ? 1 : -1;
-    return (b.eligibility?.score ?? 0) - (a.eligibility?.score ?? 0);
+    // Eligible goes before ineligible
+    const aElig = a.eligibility?.eligible !== false ? 1 : 0;
+    const bElig = b.eligibility?.eligible !== false ? 1 : 0;
+    if (aElig !== bElig) return bElig - aElig;
+    // Among eligible: higher package first
+    return b.package - a.package;
   });
 
   return (
     <>
-      <PageTitle eyebrow="Matched opportunities" title="KK Wagh engineering placement profile." copy="Students can apply; coordinators can monitor demand and eligibility." />
+      <PageTitle eyebrow="Placement drives" title="KK Wagh engineering placement profile." copy="Drives are filtered by your eligibility — branch, CGPA, and backlogs." />
       <div className="opportunity-grid">
-        {sortedDrives.slice(0, 24).map((drive) => <article className="card opportunity-card" key={drive.id}>
-          <div className={drive.eligibility?.eligible === false ? "match-score weak" : "match-score"}><strong>{drive.eligibility?.score ?? drive._count?.applications ?? 0}</strong><span>{drive.eligibility ? "match" : "apps"}</span></div>
-          <div className="opportunity-logo">{initials(drive.company.name)}</div>
-          <span className="deadline-chip">Closes {new Date(drive.deadline).toLocaleDateString()}</span>
-          <h3>{drive.company.name}</h3><p className="role">{drive.role}</p>
-          <div className="job-meta"><span>Rs {drive.package} LPA</span><span>{drive.location}</span><span>CGPA {drive.minCgpa}+</span></div>
-          {drive.eligibility && !drive.eligibility.eligible && <p className="warning">{drive.eligibility.reasons.join(", ")}</p>}
-          {role === "STUDENT" && drive.alreadyApplied
-            ? <button className="secondary-button" disabled>Already applied <CheckCircle2 size={15} /></button>
-            : role === "STUDENT" && drive.eligibility?.eligible === false
-            ? <button className="secondary-button" onClick={() => onNavigate("Profile")}>Update profile <ArrowUpRight size={15} /></button>
-            : <button className="primary-button" onClick={() => onViewDrive(drive)}>View & Apply <ArrowUpRight size={15} /></button>}
-        </article>)}
+        {sortedDrives.slice(0, 24).map((drive) => {
+          const eligible = drive.eligibility?.eligible !== false;
+          const hasEligibility = !!drive.eligibility;
+          return (
+            <article className="card opportunity-card" key={drive.id}>
+              {hasEligibility && (
+                <div className={eligible ? "eligibility-badge eligible" : "eligibility-badge ineligible"}>
+                  {eligible ? <CheckCircle2 size={12} /> : <X size={12} />}
+                  {eligible ? "Eligible" : "Not Eligible"}
+                </div>
+              )}
+              <div className="opportunity-logo">{initials(drive.company.name)}</div>
+              <span className="deadline-chip">Closes {new Date(drive.deadline).toLocaleDateString()}</span>
+              <h3>{drive.company.name}</h3><p className="role">{drive.role}</p>
+              <div className="job-meta"><span>Rs {drive.package} LPA</span><span>{drive.location}</span><span>CGPA {drive.minCgpa}+</span></div>
+              {drive.eligibility && !drive.eligibility.eligible && <p className="warning">{drive.eligibility.reasons.join(", ")}</p>}
+              {role === "STUDENT" && drive.alreadyApplied
+                ? <button className="secondary-button" disabled>Already applied <CheckCircle2 size={15} /></button>
+                : role === "STUDENT" && drive.eligibility?.eligible === false
+                ? <button className="secondary-button" onClick={() => onNavigate("Profile")}>Update profile <ArrowUpRight size={15} /></button>
+                : <button className="primary-button" onClick={() => onViewDrive(drive)}>View & Apply <ArrowUpRight size={15} /></button>}
+            </article>
+          );
+        })}
       </div>
     </>
   );

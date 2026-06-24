@@ -38,7 +38,14 @@ export async function api<T>(path: string, token?: string | null, init: RequestI
   const headers = new Headers(init.headers);
   if (!(init.body instanceof FormData)) headers.set("Content-Type", "application/json");
   if (token) headers.set("Authorization", `Bearer ${token}`);
-  const response = await fetch(`${API_BASE}${path}`, { ...init, headers, cache: "no-store" });
+  let response: Response;
+  try {
+    response = await fetch(`${API_BASE}${path}`, { ...init, headers, cache: "no-store" });
+  } catch (networkError: any) {
+    // Network error - server unreachable, CORS preflight blocked, no internet, etc.
+    const msg = networkError?.message ?? "Cannot reach server. Check your connection.";
+    throw new Error(msg);
+  }
   return parseResponse<T>(response);
 }
 
