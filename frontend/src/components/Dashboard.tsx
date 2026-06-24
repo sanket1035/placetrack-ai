@@ -13,7 +13,7 @@ import { api, demoAccounts, type LoginResponse, type Role, type SessionUser } fr
 import { ApplicationTimeline } from "./ApplicationTimeline";
 import { ReadinessRing } from "./ReadinessRing";
 
-type View = "Overview" | "Applications" | "Opportunities" | "Resume AI" | "Aptitude" | "Interview" | "Profile" | "Drive Creator" | "Analytics";
+type View = "Overview" | "Applications" | "Opportunities" | "Resume AI" | "Aptitude" | "Interview" | "Profile" | "Drive Creator" | "Analytics" | "Users";
 
 type Drive = {
   id: string;
@@ -77,7 +77,8 @@ const navIcons: Record<View, ElementType> = {
   Interview: Sparkles,
   Profile: CircleUserRound,
   "Drive Creator": Plus,
-  Analytics: Gauge
+  Analytics: Gauge,
+  Users: Users
 };
 
 const MOCK_DRIVES: Drive[] = [
@@ -209,6 +210,76 @@ function calculateEligibility(drive: Drive, student: any) {
   };
 }
 
+const MOCK_USERS: SessionUser[] = [
+  {
+    id: "stud-1",
+    email: "student@placetrack.ai",
+    role: "STUDENT",
+    student: {
+      id: "stud-profile-1",
+      name: "Rahul Sharma",
+      branch: "Computer Engineering",
+      cgpa: 8.2,
+      backlogs: 0,
+      graduationYear: 2027,
+      skills: ["Java", "Python", "SQL", "Communication"]
+    }
+  },
+  {
+    id: "stud-2",
+    email: "priya.patil@placetrack.ai",
+    role: "STUDENT",
+    student: {
+      id: "stud-profile-2",
+      name: "Priya Patil",
+      branch: "Information Technology",
+      cgpa: 9.1,
+      backlogs: 0,
+      graduationYear: 2027,
+      skills: ["React", "TypeScript", "Node.js", "Docker"]
+    }
+  },
+  {
+    id: "stud-3",
+    email: "amit.verma@placetrack.ai",
+    role: "STUDENT",
+    student: {
+      id: "stud-profile-3",
+      name: "Amit Verma",
+      branch: "E&TC",
+      cgpa: 6.8,
+      backlogs: 1,
+      graduationYear: 2027,
+      skills: ["C++", "Embedded C", "SQL", "Problem Solving"]
+    }
+  },
+  {
+    id: "coord-1",
+    email: "coordinator@placetrack.ai",
+    role: "COORDINATOR",
+    coordinator: {
+      id: "coord-profile-1",
+      department: "Computer Engineering",
+      phone: "+91 98765 43210"
+    }
+  },
+  {
+    id: "coord-2",
+    email: "prof.deshmukh@placetrack.ai",
+    role: "COORDINATOR",
+    coordinator: {
+      id: "coord-profile-2",
+      department: "Information Technology",
+      phone: "+91 99988 87766"
+    }
+  },
+  {
+    id: "admin-1",
+    email: "admin@placetrack.ai",
+    role: "ADMIN"
+  }
+];
+
 function readStorage(key: string) {
   try {
     return typeof window !== "undefined" ? window.localStorage.getItem(key) : null;
@@ -244,6 +315,7 @@ export function Dashboard() {
   const [drives, setDrives] = useState<Drive[]>([]);
   const [applications, setApplications] = useState<Application[]>([]);
   const [tests, setTests] = useState<TestSummary[]>([]);
+  const [usersList, setUsersList] = useState<SessionUser[]>([]);
   const [loading, setLoading] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -254,6 +326,7 @@ export function Dashboard() {
     const base: View[] = ["Overview", "Applications", "Opportunities", "Resume AI", "Aptitude", "Profile"];
     if (role !== "STUDENT") base.push("Interview", "Drive Creator", "Analytics");
     if (role === "STUDENT") base.push("Interview");
+    if (role === "ADMIN") base.push("Users");
     return base;
   }, [role]);
 
@@ -304,6 +377,13 @@ export function Dashboard() {
     if (!activeToken) return;
     setLoading(true);
     try {
+      const isAdmin = user?.role === "ADMIN" || (typeof window !== "undefined" && (() => {
+        try {
+          const storedUser = JSON.parse(window.localStorage.getItem("placetrack-user") || "{}");
+          return storedUser.role === "ADMIN";
+        } catch { return false; }
+      })());
+
       const [dashboardData, driveRows, applicationRows, testRows] = await Promise.all([
         api<DashboardData>("/api/dashboard", activeToken),
         api<Drive[]>("/api/drives", activeToken),
@@ -314,12 +394,32 @@ export function Dashboard() {
       setDrives(driveRows);
       setApplications(applicationRows);
       setTests(testRows);
+
+      if (isAdmin) {
+        try {
+          const userRows = await api<SessionUser[]>("/api/auth/users", activeToken);
+          setUsersList(userRows);
+        } catch (e) {
+          console.warn("Backend users api failed, falling back to mock users:", e);
+          setUsersList(MOCK_USERS);
+        }
+      }
     } catch (error) {
       console.warn("Backend API not reachable. Using offline seed data:", error);
       setDashboard(MOCK_DASHBOARD);
       setDrives(MOCK_DRIVES);
       setApplications(MOCK_APPLICATIONS);
       setTests(MOCK_TESTS);
+
+      const isAdmin = user?.role === "ADMIN" || (typeof window !== "undefined" && (() => {
+        try {
+          const storedUser = JSON.parse(window.localStorage.getItem("placetrack-user") || "{}");
+          return storedUser.role === "ADMIN";
+        } catch { return false; }
+      })());
+      if (isAdmin) {
+        setUsersList(MOCK_USERS);
+      }
     } finally {
       setLoading(false);
     }
@@ -540,6 +640,7 @@ export function Dashboard() {
             {view === "Profile" && <ProfilePage user={user} token={token} onSaved={async () => { await refreshMe(); await refreshAll(); flash("Profile updated"); }} flash={flash} />}
             {view === "Drive Creator" && <DriveCreator token={token} flash={flash} onCreated={() => refreshAll()} />}
             {view === "Analytics" && <Analytics dashboard={dashboard} />}
+            {view === "Users" && <UsersManager token={token} flash={flash} users={usersList} setUsers={setUsersList} />}
           </motion.div>
         </AnimatePresence>
       </section>
@@ -1696,4 +1797,349 @@ function initials(value: string) {
 
 function pretty(value: string) {
   return value.replaceAll("_", " ").toLowerCase().replace(/\b\w/g, (char) => char.toUpperCase());
+}
+
+type UsersManagerProps = {
+  token: string;
+  flash: (message: string) => void;
+  users: SessionUser[];
+  setUsers: React.Dispatch<React.SetStateAction<SessionUser[]>>;
+};
+
+function UsersManager({ token, flash, users, setUsers }: UsersManagerProps) {
+  const [searchTerm, setSearchTerm] = useState("");
+  const [roleFilter, setRoleFilter] = useState<"ALL" | "STUDENT" | "COORDINATOR" | "ADMIN">("ALL");
+  const [showAddCoordinator, setShowAddCoordinator] = useState(false);
+  const [editingUser, setEditingUser] = useState<SessionUser | null>(null);
+  const [deletingId, setDeletingId] = useState("");
+
+  const filteredUsers = useMemo(() => {
+    return users.filter((u) => {
+      const matchesRole = roleFilter === "ALL" || u.role === roleFilter;
+      const q = searchTerm.toLowerCase();
+      const name = u.student?.name ?? "";
+      const email = u.email;
+      const matchesSearch = name.toLowerCase().includes(q) || email.toLowerCase().includes(q);
+      return matchesRole && matchesSearch;
+    });
+  }, [users, roleFilter, searchTerm]);
+
+  const handleDeleteUser = async (id: string) => {
+    if (!window.confirm("Are you sure you want to delete this user? This will permanently remove their profile.")) return;
+    setDeletingId(id);
+    try {
+      await api(`/api/auth/users/${id}`, token, { method: "DELETE" });
+      setUsers((prev) => prev.filter((u) => u.id !== id));
+      flash("User deleted successfully");
+    } catch (error) {
+      console.warn("Backend error, falling back to local deletion:", error);
+      setUsers((prev) => prev.filter((u) => u.id !== id));
+      flash("User deleted (local fallback)");
+    } finally {
+      setDeletingId("");
+    }
+  };
+
+  return (
+    <>
+      <PageTitle eyebrow="System Administration" title="User Account Management" copy="Create coordinators, manage roles, edit user credentials and profiles." />
+      
+      <div className="users-manager-controls" style={{ display: "flex", gap: "12px", marginBottom: "20px", flexWrap: "wrap", alignItems: "center" }}>
+        <div className="search" style={{ flex: 1, minWidth: "200px" }}>
+          <Search size={17} />
+          <input
+            placeholder="Search users by name, email..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+        </div>
+        <select
+          value={roleFilter}
+          onChange={(e) => setRoleFilter(e.target.value as any)}
+          style={{ padding: "8px 12px", borderRadius: "10px", border: "1px solid var(--line)", background: "var(--panel-2)", color: "var(--text)", outline: "none", fontSize: "12px" }}
+        >
+          <option value="ALL">All Roles</option>
+          <option value="STUDENT">Students</option>
+          <option value="COORDINATOR">Coordinators</option>
+          <option value="ADMIN">Admins</option>
+        </select>
+        <button className="primary-button" onClick={() => setShowAddCoordinator(true)}>
+          <Plus size={16} /> Add Coordinator
+        </button>
+      </div>
+
+      <div className="users-list-container" style={{ display: "grid", gap: "12px" }}>
+        {filteredUsers.map((u) => (
+          <div className="card user-card" key={u.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px", gap: "16px", flexWrap: "wrap" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+              <div className="avatar">{initials(u.student?.name ?? u.email)}</div>
+              <div>
+                <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
+                  <strong style={{ fontSize: "15px" }}>{u.student?.name ?? (u.role === "COORDINATOR" ? "Faculty Coordinator" : u.role === "ADMIN" ? "Administrator" : u.email)}</strong>
+                  <span className={`status-badge`} style={{ fontSize: "10px", padding: "2px 8px" }}>{pretty(u.role)}</span>
+                </div>
+                <p style={{ fontSize: "13px", color: "var(--muted)", margin: "4px 0 0" }}>{u.email}</p>
+                {u.role === "STUDENT" && u.student && (
+                  <div style={{ display: "flex", gap: "12px", marginTop: "6px", fontSize: "12px", color: "var(--muted)", flexWrap: "wrap" }}>
+                    <span>Branch: <b>{u.student.branch}</b></span>
+                    <span>CGPA: <b>{u.student.cgpa}</b></span>
+                    <span>Backlogs: <b>{u.student.backlogs}</b></span>
+                    {u.student.skills && u.student.skills.length > 0 && (
+                      <span style={{ display: "inline-flex", gap: "4px", flexWrap: "wrap" }}>
+                        Skills: {u.student.skills.slice(0, 3).map(s => <b key={s} style={{ background: "var(--hover)", padding: "1px 4px", borderRadius: "4px" }}>{s}</b>)}
+                        {u.student.skills.length > 3 && ` +${u.student.skills.length - 3}`}
+                      </span>
+                    )}
+                  </div>
+                )}
+                {u.role === "COORDINATOR" && u.coordinator && (
+                  <div style={{ display: "flex", gap: "12px", marginTop: "6px", fontSize: "12px", color: "var(--muted)" }}>
+                    <span>Department: <b>{u.coordinator.department}</b></span>
+                  </div>
+                )}
+              </div>
+            </div>
+            <div style={{ display: "flex", gap: "8px" }}>
+              <button className="secondary-button" onClick={() => setEditingUser(u)}>Edit</button>
+              <button className="secondary-button" style={{ color: "#ef4444", borderColor: "rgba(239, 68, 68, 0.2)" }} disabled={deletingId === u.id} onClick={() => handleDeleteUser(u.id)}>
+                {deletingId === u.id ? <Loader2 className="spin" size={12} /> : "Delete"}
+              </button>
+            </div>
+          </div>
+        ))}
+        {filteredUsers.length === 0 && (
+          <EmptyState title="No users found" copy="No student or coordinator accounts match your search filters." />
+        )}
+      </div>
+
+      {showAddCoordinator && (
+        <AddCoordinatorModal
+          token={token}
+          onClose={() => setShowAddCoordinator(false)}
+          onSaved={(newCoord) => {
+            setUsers((prev) => [...prev, newCoord]);
+          }}
+          flash={flash}
+        />
+      )}
+
+      {editingUser && (
+        <EditUserModal
+          user={editingUser}
+          token={token}
+          onClose={() => setEditingUser(null)}
+          onSaved={(updatedUser) => {
+            setUsers((prev) => prev.map((u) => (u.id === updatedUser.id ? updatedUser : u)));
+          }}
+          flash={flash}
+        />
+      )}
+    </>
+  );
+}
+
+function AddCoordinatorModal({ token, onClose, onSaved, flash }: {
+  token: string;
+  onClose: () => void;
+  onSaved: (user: SessionUser) => void;
+  flash: (message: string) => void;
+}) {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [department, setDepartment] = useState(AVAILABLE_DEPARTMENTS[0]);
+  const [saving, setSaving] = useState(false);
+
+  const handleSave = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email.trim() || !password.trim()) {
+      flash("Please fill in email and password");
+      return;
+    }
+    setSaving(true);
+    try {
+      const newCoord = await api<SessionUser>("/api/auth/users/coordinator", token, {
+        method: "POST",
+        body: JSON.stringify({ email, password, department })
+      });
+      onSaved(newCoord);
+      flash("Coordinator account created");
+      onClose();
+    } catch (error) {
+      console.warn("Backend error, falling back to local coordinator creation:", error);
+      const mockCoord: SessionUser = {
+        id: "coord_mock_" + Math.random().toString(36).substring(2, 9),
+        email: email.toLowerCase(),
+        role: "COORDINATOR",
+        coordinator: {
+          id: "coord_profile_mock_" + Math.random().toString(36).substring(2, 9),
+          department
+        },
+        student: null
+      };
+      onSaved(mockCoord);
+      flash("Coordinator account created (local fallback)");
+      onClose();
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="modal-backdrop" onClick={onClose}>
+      <section className="card profile-modal" onClick={(e) => e.stopPropagation()} style={{ width: "min(500px, 100%)" }}>
+        <div className="card-head">
+          <div><span className="card-kicker">Faculty Account</span><h3>Add Coordinator</h3></div>
+          <button onClick={onClose} aria-label="Close modal"><X size={16} /></button>
+        </div>
+        <p className="section-copy" style={{ marginBottom: "16px" }}>Register a new faculty coordinator account with a designated department.</p>
+        <form onSubmit={handleSave} className="profile-form" style={{ gridTemplateColumns: "1fr" }}>
+          <label>Email Address
+            <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required placeholder="coordinator@example.com" />
+          </label>
+          <label>Password
+            <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required placeholder="Minimum 6 characters" />
+          </label>
+          <label>Department
+            <select value={department} onChange={(e) => setDepartment(e.target.value)} style={{ border: "1px solid var(--line)", background: "var(--panel-2)", color: "var(--text)", borderRadius: "10px", padding: "12px", outline: "none", fontSize: "12px", fontWeight: 500 }}>
+              {AVAILABLE_DEPARTMENTS.map((dept) => <option key={dept} value={dept}>{dept}</option>)}
+            </select>
+          </label>
+          <div className="inline-actions" style={{ marginTop: "24px" }}>
+            <button className="primary-button" type="submit" disabled={saving}>
+              {saving ? <Loader2 className="spin" size={16} /> : <CheckCircle2 size={16} />} Create Account
+            </button>
+            <button className="ghost-button" type="button" onClick={onClose}>Cancel</button>
+          </div>
+        </form>
+      </section>
+    </div>
+  );
+}
+
+function EditUserModal({ user, token, onClose, onSaved, flash }: {
+  user: SessionUser;
+  token: string;
+  onClose: () => void;
+  onSaved: (user: SessionUser) => void;
+  flash: (message: string) => void;
+}) {
+  const [email, setEmail] = useState(user.email);
+  const [role, setRole] = useState<Role>(user.role);
+  
+  // Student fields
+  const [name, setName] = useState(user.student?.name ?? "");
+  const [branch, setBranch] = useState(user.student?.branch ?? user.coordinator?.department ?? AVAILABLE_DEPARTMENTS[0]);
+  const [cgpa, setCgpa] = useState(String(user.student?.cgpa ?? 7.0));
+  const [backlogs, setBacklogs] = useState(String(user.student?.backlogs ?? 0));
+  const [selectedSkills, setSelectedSkills] = useState<string[]>(user.student?.skills ?? []);
+  
+  const [saving, setSaving] = useState(false);
+
+  const handleSave = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSaving(true);
+    try {
+      const updatedUser = await api<SessionUser>(`/api/auth/users/${user.id}`, token, {
+        method: "PATCH",
+        body: JSON.stringify({
+          email,
+          role,
+          name: role === "STUDENT" ? name : undefined,
+          branch: role === "STUDENT" || role === "COORDINATOR" ? branch : undefined,
+          cgpa: role === "STUDENT" ? Number(cgpa) : undefined,
+          backlogs: role === "STUDENT" ? Number(backlogs) : undefined,
+          skills: role === "STUDENT" ? selectedSkills : undefined
+        })
+      });
+      onSaved(updatedUser);
+      flash("User updated successfully");
+      onClose();
+    } catch (error) {
+      console.warn("Backend error, falling back to local update:", error);
+      const mockUpdated: SessionUser = {
+        ...user,
+        email: email.toLowerCase(),
+        role,
+        student: role === "STUDENT" ? {
+          id: user.student?.id ?? "student_mock_" + Math.random().toString(36).substring(2, 9),
+          name: name || "New Student",
+          branch,
+          cgpa: Number(cgpa) || 7.0,
+          backlogs: Number(backlogs) || 0,
+          graduationYear: user.student?.graduationYear ?? 2027,
+          skills: selectedSkills
+        } : null,
+        coordinator: role === "COORDINATOR" ? {
+          id: user.coordinator?.id ?? "coord_mock_" + Math.random().toString(36).substring(2, 9),
+          department: branch
+        } : null
+      };
+      onSaved(mockUpdated);
+      flash("User updated (local fallback)");
+      onClose();
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="modal-backdrop" onClick={onClose}>
+      <section className="card profile-modal" onClick={(e) => e.stopPropagation()}>
+        <div className="card-head">
+          <div><span className="card-kicker">Manage Account</span><h3>Edit User Profile</h3></div>
+          <button onClick={onClose} aria-label="Close modal"><X size={16} /></button>
+        </div>
+        <p className="section-copy" style={{ marginBottom: "16px" }}>Modify user basic credentials and profile credentials. Role switches automatically adjust profile details.</p>
+        <form onSubmit={handleSave} className="profile-form">
+          <label style={{ gridColumn: "1 / -1" }}>Email Address
+            <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+          </label>
+          <label style={{ gridColumn: "1 / -1" }}>User Role
+            <select value={role} onChange={(e) => setRole(e.target.value as Role)} style={{ border: "1px solid var(--line)", background: "var(--panel-2)", color: "var(--text)", borderRadius: "10px", padding: "12px", outline: "none", fontSize: "12px", fontWeight: 500 }}>
+              <option value="STUDENT">STUDENT</option>
+              <option value="COORDINATOR">COORDINATOR</option>
+              <option value="ADMIN">ADMIN</option>
+            </select>
+          </label>
+
+          {role === "STUDENT" && (
+            <>
+              <label>Name
+                <input value={name} onChange={(e) => setName(e.target.value)} required />
+              </label>
+              <label>Branch
+                <select value={branch} onChange={(e) => setBranch(e.target.value)} style={{ border: "1px solid var(--line)", background: "var(--panel-2)", color: "var(--text)", borderRadius: "10px", padding: "12px", outline: "none", fontSize: "12px", fontWeight: 500 }}>
+                  {AVAILABLE_DEPARTMENTS.map((dept) => <option key={dept} value={dept}>{dept}</option>)}
+                </select>
+              </label>
+              <label>CGPA
+                <input type="number" step="0.01" min="0" max="10" value={cgpa} onChange={(e) => setCgpa(e.target.value)} required />
+              </label>
+              <label>Backlogs
+                <input type="number" min="0" max="10" value={backlogs} onChange={(e) => setBacklogs(e.target.value)} required />
+              </label>
+              <div style={{ gridColumn: "1 / -1" }}>
+                <SkillsSelector selected={selectedSkills} onChange={setSelectedSkills} />
+              </div>
+            </>
+          )}
+
+          {role === "COORDINATOR" && (
+            <label style={{ gridColumn: "1 / -1" }}>Department / Branch
+              <select value={branch} onChange={(e) => setBranch(e.target.value)} style={{ border: "1px solid var(--line)", background: "var(--panel-2)", color: "var(--text)", borderRadius: "10px", padding: "12px", outline: "none", fontSize: "12px", fontWeight: 500 }}>
+                {AVAILABLE_DEPARTMENTS.map((dept) => <option key={dept} value={dept}>{dept}</option>)}
+              </select>
+            </label>
+          )}
+
+          <div className="inline-actions" style={{ gridColumn: "1 / -1", marginTop: "24px" }}>
+            <button className="primary-button" type="submit" disabled={saving}>
+              {saving ? <Loader2 className="spin" size={16} /> : <CheckCircle2 size={16} />} Save Changes
+            </button>
+            <button className="ghost-button" type="button" onClick={onClose}>Cancel</button>
+          </div>
+        </form>
+      </section>
+    </div>
+  );
 }
