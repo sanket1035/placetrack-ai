@@ -1487,59 +1487,46 @@ function InterviewCoach({ token, flash }: { token: string; flash: (message: stri
       ],
       soft: softSkillsQuestions
     },
-    "Instrumentation Engineering": {
+    "Robotics & Automation": {
       technical: [
-        "Explain the difference between active transducers and passive transducers.",
-        "What is the working principle of a RTD (Resistance Temperature Detector) and Thermocouple?",
-        "Explain the function of a PID controller. What do P, I, and D terms adjust?",
-        "What is the difference between feedforward control and feedback control systems?",
-        "Explain the working principle of an electromagnetic flowmeter.",
-        "What is LVDT (Linear Variable Differential Transformer) and how does it work?",
-        "Explain the difference between calibration and accuracy of an instrument.",
-        "What is PLC (Programmable Logic Controller) and how does it differ from a DCS?",
-        "What is a control valve, and what are its typical characteristics (linear, equal percentage)?",
-        "Explain the working of a strain gauge and its gauge factor.",
-        "What is the difference between systematic errors and random errors?",
-        "Explain the concept of signal conditioning in instrumentation systems.",
-        "What is a Smart Transmitter, and what protocol does it commonly use (e.g. HART)?",
-        "What is a Bourdon tube and how is it used to measure pressure?",
-        "Explain response time, dead time, and time constant of a sensor."
+        "What is ROS (Robot Operating System)? Explain its node, topic, and service architecture.",
+        "Explain forward kinematics and inverse kinematics in robotic manipulators.",
+        "What is SLAM (Simultaneous Localisation and Mapping)? How do robots use it for navigation?",
+        "Explain the difference between servo motors and stepper motors. When would you use each?",
+        "What is a PID controller and how is it applied in robotic motion control?",
+        "Explain the role of sensors (lidar, ultrasonic, encoders) in autonomous robotics.",
+        "What is a cobot (collaborative robot)? How does it differ from an industrial robot?",
+        "Explain the concept of degrees of freedom (DOF) in a robot arm.",
+        "What is path planning in robotics? Explain A* and RRT algorithms.",
+        "How does computer vision aid in robotic pick-and-place tasks?",
+        "Explain the difference between pneumatic, hydraulic, and electric actuators.",
+        "What is PLC ladder logic programming? Give a simple example.",
+        "Explain what Industry 4.0 means and how robotics fits into smart manufacturing.",
+        "What is the difference between open-loop and closed-loop control in automation?",
+        "Explain end effectors — what types exist and how are they selected for tasks?"
       ],
       soft: softSkillsQuestions
     },
-    "Cybersecurity": {
+    "MBA / MCA": {
       technical: [
-        "What is the difference between symmetric and asymmetric cryptography?",
-        "Explain SQL injection (SQLi) and how it can be mitigated.",
-        "What is Cross-Site Scripting (XSS) and what are its main types?",
-        "Explain the difference between a vulnerability scan, penetration testing, and red teaming.",
-        "What is a Man-in-the-Middle (MitM) attack and how does HTTPS prevent it?",
-        "Explain the CIA Triad (Confidentiality, Integrity, Availability) with examples.",
-        "What is DNS Spoofing or cache poisoning?",
-        "Explain the difference between IDS (Intrusion Detection System) and IPS (Intrusion Prevention System).",
-        "What is a firewall? What is the difference between stateful and stateless firewalls?",
-        "Explain how Salting helps in password hashing and storage.",
-        "What is multi-factor authentication (MFA) and why is it secure?",
-        "What is a Zero-Day vulnerability?",
-        "Explain the difference between symmetric key encryption algorithms like AES and asymmetric like RSA.",
-        "What is social engineering, and what are some common techniques (e.g. phishing, tailgating)?",
-        "Explain how a VPN (Virtual Private Network) works to secure traffic."
+        "Explain database normalization. What are 1NF, 2NF, and 3NF?",
+        "What is the difference between a stack and a queue? Give real-world application examples.",
+        "Explain the OSI model. What happens at each of the 7 layers?",
+        "What is SDLC (Software Development Life Cycle)? Compare Agile and Waterfall.",
+        "Explain ERP systems. What is SAP and how does it benefit an organisation?",
+        "What is supply chain management? Explain just-in-time (JIT) inventory.",
+        "Explain SWOT analysis and Porter's Five Forces with a real company example.",
+        "What is business intelligence? How do OLAP and OLTP systems differ?",
+        "What are decision support systems (DSS) and how do they aid management?",
+        "Explain the difference between primary market research and secondary market research.",
+        "What is cloud computing? Explain IaaS, PaaS, and SaaS with examples.",
+        "What is operations research? Explain linear programming with an example.",
+        "Explain working capital management and the cash conversion cycle.",
+        "What is the difference between a primary key and a foreign key in RDBMS?",
+        "Explain marketing analytics — what KPIs would you track for a product launch?"
       ],
       soft: softSkillsQuestions
     }
-  };
-
-  const roleEmojis: Record<string, string> = {
-    "Computer Engineering": "💻",
-    "Information Technology": "🌐",
-    "AI & Data Science": "🤖",
-    "Electronics & TC": "📡",
-    "Electrical Engineering": "⚡",
-    "Mechanical Engineering": "⚙️",
-    "Civil Engineering": "🏗️",
-    "Chemical Engineering": "🧪",
-    "Instrumentation Engineering": "🎛️",
-    "Cybersecurity": "🔐"
   };
 
   const submitAnswer = async (questionText: string) => {
@@ -1569,11 +1556,10 @@ function InterviewCoach({ token, flash }: { token: string; flash: (message: stri
   if (!selectedRole) {
     return (
       <>
-        <PageTitle eyebrow="Interview coach" title="Choose a department to start practicing." copy="10 engineering & IT departments — each with 15 specific technical questions and 5 soft skills questions (numbered 16-20). practice and get AI feedback." />
+        <PageTitle eyebrow="Interview coach" title="Choose a department to start practicing." copy="10 engineering & IT departments — each with 15 specific technical questions and 5 soft skills questions (numbered 16–20). Practice and get AI feedback." />
         <div className="role-card-grid">
           {Object.keys(questionBank).map((dept) => (
             <button key={dept} type="button" className="role-card-btn" onClick={() => { setSelectedRole(dept); setSelectedQuestion(null); setEvaluations({}); setAnswers({}); setActiveTab("technical"); }}>
-              <span className="role-card-emoji">{roleEmojis[dept] ?? "🎯"}</span>
               <span className="role-card-name">{dept}</span>
               <span className="role-card-meta">{questionBank[dept].technical.length} technical · {questionBank[dept].soft.length} soft skills</span>
             </button>
@@ -1589,14 +1575,14 @@ function InterviewCoach({ token, flash }: { token: string; flash: (message: stri
         <button type="button" className="ghost-button" style={{ padding: "6px 12px", fontSize: "13px" }} onClick={() => { setSelectedRole(null); setSelectedQuestion(null); }}>
           ← All Departments
         </button>
-        <PageTitle eyebrow={`Interview coach · ${selectedRole}`} title={`${roleEmojis[selectedRole] ?? "🎯"} ${selectedRole} Prep`} copy={`${questionBank[selectedRole].technical.length} technical questions + ${questionBank[selectedRole].soft.length} soft skill questions. Click any question to practice and get AI feedback.`} />
+        <PageTitle eyebrow={`Interview coach · ${selectedRole}`} title={`${selectedRole} Interview Prep`} copy={`${questionBank[selectedRole].technical.length} technical questions + ${questionBank[selectedRole].soft.length} soft skill questions. Click any question to practice and get AI feedback.`} />
       </div>
       <div className="interview-tab-row">
         <button type="button" className={activeTab === "technical" ? "interview-tab active" : "interview-tab"} onClick={() => { setActiveTab("technical"); setSelectedQuestion(null); }}>
-          🔧 Technical ({questionBank[selectedRole].technical.length})
+          Technical ({questionBank[selectedRole].technical.length})
         </button>
         <button type="button" className={activeTab === "soft" ? "interview-tab active" : "interview-tab"} onClick={() => { setActiveTab("soft"); setSelectedQuestion(null); }}>
-          💬 Soft Skills ({questionBank[selectedRole].soft.length})
+          Soft Skills ({questionBank[selectedRole].soft.length})
         </button>
       </div>
       <div className="insight-list">
@@ -1610,7 +1596,7 @@ function InterviewCoach({ token, flash }: { token: string; flash: (message: stri
               <span style={{ fontSize: "13px", fontWeight: 600, color: activeTab === "soft" ? "#f59e0b" : "#8c6cff", minWidth: "28px" }}>{String(displayIndex).padStart(2, "0")}</span>
               <div style={{ width: "100%" }}>
                 <strong style={{ fontSize: "14px", lineHeight: "1.5" }}>{question}</strong>
-                <p style={{ fontSize: "12px", marginTop: "2px" }}>{activeTab === "soft" ? "💬 Soft skill / behavioral" : "🔧 Technical"} · Click to practice</p>
+                <p style={{ fontSize: "12px", marginTop: "2px" }}>{activeTab === "soft" ? "Soft skill / behavioral" : "Technical"} · Click to practice</p>
                 {isSelected && (
                   <div className="interview-practice-panel" onClick={(e) => e.stopPropagation()}>
                     <textarea placeholder="Type your answer here... Be specific and use examples." value={answers[question] || ""} onChange={(e) => setAnswers({ ...answers, [question]: e.target.value })} />

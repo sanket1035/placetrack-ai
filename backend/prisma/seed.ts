@@ -74,29 +74,52 @@ async function main() {
     data: { email: "admin@placetrack.ai", passwordHash, role: UserRole.ADMIN }
   });
 
-  const users = Array.from({ length: 500 }, (_, index) => {
+  const userDataList = Array.from({ length: 150 }, (_, index) => {
     const branch = branches[index % branches.length];
-    const name = `${firstNames[index % firstNames.length]} ${lastNames[(index * 3) % lastNames.length]}`;
     return {
       email: index === 0 ? "student@placetrack.ai" : `student${index + 1}@placetrack.ai`,
       passwordHash,
       role: UserRole.STUDENT,
-      name,
-      cgpa: index === 0 ? 8.6 : Number((6.4 + ((index * 7) % 31) / 10).toFixed(2)),
       branch,
+      cgpa: index === 0 ? 8.6 : Number((6.4 + ((index * 7) % 31) / 10).toFixed(2)),
       backlogs: index === 0 ? 0 : index % 23 === 0 ? 2 : index % 11 === 0 ? 1 : 0,
       graduationYear: 2027,
       skills: skillsByBranch[branch],
       readinessScore: index === 0 ? 88 : 58 + ((index * 11) % 38),
-      mockTestCount: 2 + (index % 9)
+      mockTestCount: 2 + (index % 9),
+      name: `${firstNames[index % firstNames.length]} ${lastNames[(index * 3) % lastNames.length]}`
     };
   });
-  for (const item of users) {
-    const { name, cgpa, branch, backlogs, graduationYear, skills, readinessScore, mockTestCount, ...user } = item;
-    await prisma.user.create({
-      data: { ...user, student: { create: { name, cgpa, branch, backlogs, graduationYear, skills, readinessScore, mockTestCount } } }
-    });
-  }
+
+  // Batch-insert all 150 User rows in one query
+  await prisma.user.createMany({
+    data: userDataList.map(({ name: _n, branch: _b, cgpa: _c, backlogs: _bl, graduationYear: _gy, skills: _sk, readinessScore: _rs, mockTestCount: _mt, ...user }) => user),
+    skipDuplicates: true
+  });
+
+  // Fetch the inserted user IDs in one query
+  const insertedUsers = await prisma.user.findMany({
+    where: { email: { in: userDataList.map(u => u.email) } },
+    select: { id: true, email: true }
+  });
+  const emailToId = new Map(insertedUsers.map(u => [u.email, u.id]));
+
+  // Batch-insert all 150 Student rows in one query
+  await prisma.student.createMany({
+    data: userDataList.map(item => ({
+      userId: emailToId.get(item.email)!,
+      name: item.name,
+      cgpa: item.cgpa,
+      branch: item.branch,
+      backlogs: item.backlogs,
+      graduationYear: item.graduationYear,
+      skills: item.skills,
+      readinessScore: item.readinessScore,
+      mockTestCount: item.mockTestCount
+    })),
+    skipDuplicates: true
+  });
+
 
   const companies = [];
   for (const [name, website] of companyData) {
@@ -173,7 +196,7 @@ async function main() {
     });
   }
   await prisma.testResult.createMany({ data: [...new Map(results.map((row) => [`${row.studentId}:${row.testId}`, row])).values()], skipDuplicates: true });
-  console.log(`Seeded KK Wagh engineering data: 500 students, ${companies.length} companies, 100 drives, ${uniqueApplications.length} applications, 20 tests, and 200 results.`);
+  console.log(`Seeded KK Wagh engineering data: 150 students, ${companies.length} companies, 100 drives, ${uniqueApplications.length} applications, 20 tests, and 200 results.`);
 }
 
 main().catch(console.error).finally(() => prisma.$disconnect());

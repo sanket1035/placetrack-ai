@@ -73,6 +73,9 @@ app.use((error: unknown, _request: express.Request, response: express.Response, 
 const server = app.listen(port, async () => {
   console.log(`PlaceTrack API running on http://localhost:${port}`);
   try {
+    // Pre-warm DB connection so first user request doesn't pay cold-start cost
+    await prisma.$connect();
+    console.log("Database connection established.");
     const userCount = await prisma.user.count();
     if (userCount === 0) {
       console.log("Database is empty. Initiating database auto-seed...");
@@ -89,10 +92,10 @@ const server = app.listen(port, async () => {
         }
       });
     } else {
-      console.log(`Database has existing data (${userCount} users). Skipping auto-seed.`);
+      console.log(`Database ready — ${userCount} users found. Skipping auto-seed.`);
     }
   } catch (error) {
-    console.error("Failed to check database/run auto-seed:", error);
+    console.error("Failed to connect to database:", error);
   }
 });
 const shutdown = async () => {

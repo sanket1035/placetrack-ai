@@ -24,7 +24,7 @@ authRouter.post("/login", async (request, response) => {
   if (!user || !(await bcrypt.compare(input.password, user.passwordHash))) {
     return response.status(401).json({ error: "Invalid email or password" });
   }
-  await audit(user.id, "LOGIN", "auth");
+  audit(user.id, "LOGIN", "auth").catch(() => {});
   const { passwordHash: _, ...safeUser } = user;
   response.json({ token: signToken(user.id, user.role), user: safeUser });
 });
