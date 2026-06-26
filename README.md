@@ -34,9 +34,9 @@ A full-stack placement management platform enabling students to track applicatio
 |:-------------:|:-------:|
 | ![Aptitude](screenshots/aptitude.png) | ![Profile](screenshots/profile.png) |
 
-| Interview Coach | |
-|:---------------:|:-:|
-| ![Interview](screenshots/interview.png) | |
+| Interview Coach | AI Feedback |
+|:---------------:|:-----------:|
+| ![Interview](screenshots/interview.png) | ![AI Feedback](screenshots/interview-feedback.png) |
 
 ---
 
