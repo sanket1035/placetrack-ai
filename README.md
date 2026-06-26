@@ -2,7 +2,7 @@
 
 **Enterprise-grade Placement Management & Student Readiness Platform for Engineering Colleges**
 
-[![Live Demo](https://img.shields.io/badge/Live_Demo-PlaceTrack_AI-00C7B7?style=for-the-badge&logo=vercel&logoColor=white)](https://frontend-umber-one-zuhj8ueccq.vercel.app/)
+[![Live Demo](https://img.shields.io/badge/Live_Demo-00C7B7?style=flat-square&logo=vercel&logoColor=white)](https://frontend-umber-one-zuhj8ueccq.vercel.app/)
 [![Next.js](https://img.shields.io/badge/Next.js-15-black?style=flat-square&logo=next.js&logoColor=white)](https://nextjs.org/)
 [![React](https://img.shields.io/badge/React-19-20232a?style=flat-square&logo=react&logoColor=61DAFB)](https://react.dev/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?style=flat-square&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
@@ -49,6 +49,7 @@ A full-stack placement management platform enabling students to track applicatio
 - Timed aptitude mock tests with server-side grading and section-wise feedback
 - AI interview coach generating role-specific questions with answer evaluation
 - In-app notifications for application status changes and interview schedules
+- **90 skills across 4 categories** (Technical Core, Tools & Platforms, Core Engineering, Soft Skills) covering all 10 branches — CS, IT, AI/DS, Electronics, Electrical, Mechanical, Civil, Chemical, and more
 
 **Coordinator & Admin Portal**
 - Create and manage placement drives with branch filters, CGPA caps, backlog limits, and deadlines

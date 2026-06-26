@@ -61,11 +61,33 @@ const AVAILABLE_DEPARTMENTS = [
   "Civil"
 ];
 
-const AVAILABLE_SKILLS = [
-  "JavaScript", "TypeScript", "React", "Next.js", "Node.js", "Express", "Python",
-  "Java", "C++", "SQL", "PostgreSQL", "MongoDB", "AWS", "Docker", "Git",
-  "Machine Learning", "Data Structures", "Algorithms", "Communication"
-];
+const SKILLS_BY_CATEGORY: Record<string, string[]> = {
+  "Technical Core": [
+    "JavaScript", "TypeScript", "Python", "Java", "C", "C++", "C#", "Go", "Rust", "PHP",
+    "React", "Next.js", "Angular", "Vue.js", "Node.js", "Express", "Django", "Flask",
+    "Spring Boot", "FastAPI", "GraphQL", "REST API", "WebSockets"
+  ],
+  "Tools & Platforms": [
+    "SQL", "PostgreSQL", "MySQL", "MongoDB", "Redis", "Elasticsearch",
+    "AWS", "Azure", "GCP", "Docker", "Kubernetes", "Linux", "Git", "CI/CD",
+    "Jenkins", "Terraform", "Kafka", "Microservices", "Data Structures",
+    "Algorithms", "Machine Learning", "Deep Learning", "TensorFlow", "PyTorch",
+    "Data Analysis", "System Design", "OOPS"
+  ],
+  "Core Engineering": [
+    "AutoCAD", "SolidWorks", "CATIA", "ANSYS", "Fusion 360",
+    "MATLAB", "Simulink", "PLC Programming", "SCADA", "Embedded C",
+    "VHDL / Verilog", "PCB Design", "Arduino", "Raspberry Pi", "LabVIEW",
+    "STAAD Pro", "Revit", "ETABS", "Primavera P6", "GIS",
+    "CNC Programming", "Six Sigma", "Lean Manufacturing", "Thermodynamics", "Fluid Mechanics",
+    "Power Systems", "Circuit Design", "Process Simulation", "P&ID", "GD&T"
+  ],
+  "Soft Skills": [
+    "Communication", "Teamwork", "Leadership", "Problem Solving", "Critical Thinking",
+    "Time Management", "Adaptability", "Presentation", "Project Management", "Agile / Scrum"
+  ]
+};
+const AVAILABLE_SKILLS = Object.values(SKILLS_BY_CATEGORY).flat();
 
 const statusOptions = ["APPLIED", "SHORTLISTED", "APTITUDE_CLEARED", "TECHNICAL_ROUND", "HR_ROUND", "SELECTED", "REJECTED"];
 const navIcons: Record<View, ElementType> = {
@@ -663,21 +685,26 @@ function SkillsSelector({ selected, onChange }: { selected: string[]; onChange: 
   return (
     <div className="skills-selector">
       <span>Skills (click to toggle)</span>
-      <div className="skills-tags">
-        {AVAILABLE_SKILLS.map((skill) => {
-          const active = selected.includes(skill);
-          return (
-            <button
-              key={skill}
-              type="button"
-              className={active ? "skill-tag active" : "skill-tag"}
-              onClick={() => toggleSkill(skill)}
-            >
-              {skill}
-            </button>
-          );
-        })}
-      </div>
+      {Object.entries(SKILLS_BY_CATEGORY).map(([category, skills]) => (
+        <div key={category}>
+          <p style={{ fontSize: "11px", fontWeight: 600, color: "var(--muted)", textTransform: "uppercase", letterSpacing: "0.08em", margin: "10px 0 6px" }}>{category}</p>
+          <div className="skills-tags">
+            {skills.map((skill) => {
+              const active = selected.includes(skill);
+              return (
+                <button
+                  key={skill}
+                  type="button"
+                  className={active ? "skill-tag active" : "skill-tag"}
+                  onClick={() => toggleSkill(skill)}
+                >
+                  {skill}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      ))}
     </div>
   );
 }
