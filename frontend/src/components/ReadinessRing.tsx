@@ -10,7 +10,7 @@ export function ReadinessRing({ value }: { value: number }) {
       <svg viewBox="0 0 128 128">
         <defs>
           <linearGradient id="score-gradient" x1="0" x2="1">
-            <stop offset="0" stopColor="#8c6cff" />
+            <stop offset="0" stopColor="var(--violet)" />
             <stop offset="1" stopColor="#42d7c4" />
           </linearGradient>
         </defs>

@@ -1620,7 +1620,7 @@ function InterviewCoach({ token, flash }: { token: string; flash: (message: stri
           const displayIndex = activeTab === "technical" ? index + 1 : index + 16;
           return (
             <div className={`card insight insight-row-clickable ${isSelected ? "selected-question" : ""}`} key={question} onClick={() => setSelectedQuestion(isSelected ? null : question)}>
-              <span style={{ fontSize: "13px", fontWeight: 600, color: activeTab === "soft" ? "#f59e0b" : "#8c6cff", minWidth: "28px" }}>{String(displayIndex).padStart(2, "0")}</span>
+              <span style={{ fontSize: "13px", fontWeight: 600, color: activeTab === "soft" ? "#f59e0b" : "var(--violet)", minWidth: "28px" }}>{String(displayIndex).padStart(2, "0")}</span>
               <div style={{ width: "100%" }}>
                 <strong style={{ fontSize: "14px", lineHeight: "1.5" }}>{question}</strong>
                 <p style={{ fontSize: "12px", marginTop: "2px" }}>{activeTab === "soft" ? "Soft skill / behavioral" : "Technical"} · Click to practice</p>
@@ -1758,7 +1758,7 @@ function Analytics({ dashboard }: { dashboard: DashboardData | null }) {
             <XAxis dataKey="branch" axisLine={false} tickLine={false} tick={{ fill: "var(--muted)" }} />
             <YAxis axisLine={false} tickLine={false} tick={{ fill: "var(--muted)" }} />
             <Tooltip cursor={{ fill: "var(--hover)" }} contentStyle={{ background: "var(--panel)", border: "1px solid var(--line)", borderRadius: 12 }} />
-            <Bar dataKey="readiness" fill="#8c6cff" radius={[8, 8, 2, 2]} />
+            <Bar dataKey="readiness" fill="var(--violet)" radius={[8, 8, 2, 2]} />
           </BarChart>
         </ResponsiveContainer>
       </section>
