@@ -459,42 +459,10 @@ export function Dashboard() {
       writeStorage("placetrack-token", session.token);
       writeStorage("placetrack-user", JSON.stringify(session.user));
       flash(`Logged in as ${session.user.role.toLowerCase()}`);
-    } catch (error) {
-      // Offline fallback: check if credentials match demo accounts
-      const lowercaseEmail = email.toLowerCase();
-      const matchedDemo = demoAccounts.find(
-        (d) => d.email.toLowerCase() === lowercaseEmail && d.password === password
-      );
-      if (matchedDemo) {
-        const mockUser: SessionUser = {
-          id: matchedDemo.label.toLowerCase() + "_mock_id",
-          email: matchedDemo.email,
-          role: matchedDemo.label.toUpperCase() as Role,
-          student: matchedDemo.label === "Student" ? {
-            id: "student_mock_id",
-            name: "Rahul Sharma",
-            branch: "Computer Engineering",
-            cgpa: 8.2,
-            backlogs: 0,
-            graduationYear: 2027,
-            skills: ["Java", "Python", "SQL", "Communication"]
-          } : null,
-          coordinator: matchedDemo.label === "Coordinator" ? {
-            id: "coordinator_mock_id",
-            department: "Computer Engineering"
-          } : null
-        };
-        const mockToken = "mock_jwt_token_for_" + matchedDemo.label.toLowerCase();
-        setToken(mockToken);
-        setUser(mockUser);
-        writeStorage("placetrack-token", mockToken);
-        writeStorage("placetrack-user", JSON.stringify(mockUser));
-        flash(`Logged in as ${mockUser.role.toLowerCase()} (offline mode)`);
-      } else {
-        const err = new Error("Invalid email or password");
-        flash(err.message);
-        throw err;
-      }
+    } catch (error: any) {
+      const msg = error?.message || error?.error || "Login failed";
+      flash(msg);
+      throw error;
     } finally {
       setLoading(false);
     }
@@ -512,32 +480,10 @@ export function Dashboard() {
       writeStorage("placetrack-token", session.token);
       writeStorage("placetrack-user", JSON.stringify(session.user));
       flash(`Account created as ${input.role.toLowerCase()} — logged in`);
-    } catch (error) {
-      // Offline fallback: simulate successful signup
-      const mockUser: SessionUser = {
-        id: "user_" + Math.random().toString(36).substring(2, 9),
-        email: input.email.toLowerCase(),
-        role: input.role,
-        student: input.role === "STUDENT" ? {
-          id: "student_" + Math.random().toString(36).substring(2, 9),
-          name: input.name,
-          branch: input.branch,
-          cgpa: input.cgpa,
-          backlogs: 0,
-          graduationYear: 2027,
-          skills: input.skills
-        } : null,
-        coordinator: input.role === "COORDINATOR" ? {
-          id: "coord_" + Math.random().toString(36).substring(2, 9),
-          department: input.branch
-        } : null
-      };
-      const mockToken = "mock_jwt_token_" + Math.random().toString(36).substring(2, 9);
-      setToken(mockToken);
-      setUser(mockUser);
-      writeStorage("placetrack-token", mockToken);
-      writeStorage("placetrack-user", JSON.stringify(mockUser));
-      flash(`Account created as ${input.role.toLowerCase()} (offline mode)`);
+    } catch (error: any) {
+      const msg = error?.message || error?.error || "Signup failed";
+      flash(msg);
+      throw error;
     } finally {
       setLoading(false);
     }
