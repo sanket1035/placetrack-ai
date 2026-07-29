@@ -1,4 +1,4 @@
-﻿// PageTitle.tsx - Shared page-level heading component used across feature view modules.
+// PageTitle.tsx - Shared page-level heading component used across feature view modules.
 import { CalendarDays } from "lucide-react";
 
 export default function PageTitle({
