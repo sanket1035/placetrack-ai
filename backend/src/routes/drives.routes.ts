@@ -165,6 +165,73 @@ drivesRouter.post("/", authorize(UserRole.COORDINATOR, UserRole.ADMIN), async (r
   response.status(201).json(drive);
 });
 
+const patchDriveSchema = z.object({
+  company: z.object({ name: z.string().min(2), website: z.string().url().optional(), description: z.string().optional() }).optional(),
+  role: z.string().min(2).optional(),
+  package: z.number().positive().optional(),
+  location: z.string().min(2).optional(),
+  jobType: z.string().optional(),
+  description: z.string().min(10).optional(),
+  minCgpa: z.number().min(0).max(10).optional(),
+  allowedBranches: z.array(z.string()).min(1).optional(),
+  maxBacklogs: z.number().int().min(0).optional(),
+  graduationYear: z.number().int().optional(),
+  deadline: z.coerce.date().optional(),
+  testDate: z.coerce.date().optional(),
+  interviewDate: z.coerce.date().optional(),
+  status: z.nativeEnum(DriveStatus).optional()
+});
+
+drivesRouter.patch("/:id", authorize(UserRole.COORDINATOR, UserRole.ADMIN), async (request, response) => {
+  const id = String(request.params.id);
+  const existingDrive = await prisma.placementDrive.findUnique({ where: { id } });
+  if (!existingDrive) {
+    return response.status(404).json({ error: "Drive not found" });
+  }
+
+  const input = patchDriveSchema.parse(request.body);
+  const { company, ...driveInput } = input;
+
+  const drive = await prisma.placementDrive.update({
+    where: { id },
+    data: {
+      ...driveInput,
+      ...(company?.name
+        ? {
+            company: {
+              connectOrCreate: {
+                where: { name: company.name },
+                create: company
+              }
+            }
+          }
+        : {})
+    },
+    include: { company: true }
+  });
+
+  await audit(request.auth!.userId, "UPDATE", "placement-drive", { driveId: drive.id });
+
+  response.json(drive);
+});
+
+drivesRouter.delete("/:id", authorize(UserRole.COORDINATOR, UserRole.ADMIN), async (request, response) => {
+  const id = String(request.params.id);
+  const existingDrive = await prisma.placementDrive.findUnique({ where: { id } });
+  if (!existingDrive) {
+    return response.status(404).json({ error: "Drive not found" });
+  }
+
+  await prisma.placementDrive.delete({
+    where: { id }
+  });
+
+  await audit(request.auth!.userId, "DELETE", "placement-drive", { driveId: id });
+
+  response.json({ message: "Drive deleted successfully" });
+});
+
+
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 2 * 1024 * 1024 }, // Max 2 MB

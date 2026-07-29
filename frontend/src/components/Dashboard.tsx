@@ -7,7 +7,7 @@ import {
   CircleUserRound, Command, LayoutDashboard, Loader2, LogOut, Menu,
   RotateCw, Search, X, BriefcaseBusiness, Building2, FileScan, BookOpenCheck,
   Sparkles, Gauge, Users, Target, Download, Plus, CheckCircle2, ArrowUpRight,
-  Sun, Moon, Upload, Send, CalendarDays, Trophy, Share2
+  Sun, Moon, Upload, Send, CalendarDays, Trophy, Share2, Trash2
 } from "lucide-react";
 import { api, demoAccounts, type LoginResponse, type Role, type SessionUser } from "@/lib/api";
 import { getTheme, setTheme } from "@/lib/theme";
@@ -610,7 +610,7 @@ export function Dashboard() {
             {view === "Aptitude" && <Aptitude token={token} role={role} tests={filteredTests} flash={flash} />}
             {view === "Interview" && <InterviewCoach token={token} flash={flash} />}
             {view === "Profile" && <ProfilePage user={user} token={token} onSaved={async () => { await refreshMe(); await refreshAll(); flash("Profile updated"); }} flash={flash} dashboard={dashboard} />}
-            {view === "Drive Creator" && <DriveCreator token={token} flash={flash} onCreated={() => refreshAll()} />}
+            {view === "Drive Creator" && <DriveCreator token={token} flash={flash} onCreated={() => refreshAll()} drives={drives} />}
             {view === "Analytics" && <Analytics token={token} dashboard={dashboard} />}
             {view === "Users" && <UsersManager token={token} flash={flash} users={usersList} setUsers={setUsersList} />}
             {view === "Practice" && <PracticeView token={token} flash={flash} />}
@@ -648,6 +648,23 @@ function DriveDetailsModal({ drive, role, token, onClose, onApplied, flash }: {
   };
 
   const isEligible = drive.eligibility?.eligible !== false;
+
+  const [deleting, setDeleting] = useState(false);
+  const deleteDrive = async () => {
+    if (!window.confirm(`Are you sure you want to delete the placement drive for ${drive.company.name} (${drive.role})? This will permanently delete all associated student applications.`)) {
+      return;
+    }
+    setDeleting(true);
+    try {
+      await api(`/api/drives/${drive.id}`, token, { method: "DELETE" });
+      flash("Drive deleted successfully");
+      onApplied();
+    } catch (error) {
+      flash(error instanceof Error ? error.message : "Could not delete drive");
+    } finally {
+      setDeleting(false);
+    }
+  };
 
   return (
     <div className="modal-backdrop" onClick={onClose}>
@@ -720,7 +737,7 @@ function DriveDetailsModal({ drive, role, token, onClose, onApplied, flash }: {
           </div>
         </div>
 
-        <div className="inline-actions" style={{ marginTop: "8px" }}>
+        <div className="inline-actions" style={{ marginTop: "8px", flexDirection: "column", gap: "10px" }}>
           {role === "STUDENT" && drive.alreadyApplied ? (
             <button className="secondary-button" disabled style={{ width: "100%" }}>
               Already applied <CheckCircle2 size={15} />
@@ -735,7 +752,18 @@ function DriveDetailsModal({ drive, role, token, onClose, onApplied, flash }: {
               {applying ? <Loader2 className="spin" size={16} /> : <ArrowUpRight size={16} />} Apply Now
             </button>
           ) : (
-            <p className="helper-text">Coordinator / admin accounts can monitor this drive via the applications panel.</p>
+            <div style={{ display: "flex", width: "100%", justifyContent: "space-between", alignItems: "center", gap: "12px" }}>
+              <p className="helper-text" style={{ margin: 0 }}>Coordinator / admin accounts can monitor or manage this drive.</p>
+              <button
+                type="button"
+                className="ghost-button"
+                disabled={deleting}
+                onClick={deleteDrive}
+                style={{ color: "#ff4d4f", borderColor: "rgba(255, 77, 79, 0.3)", padding: "8px 14px", flexShrink: 0 }}
+              >
+                {deleting ? <Loader2 className="spin" size={15} /> : <Trash2 size={15} />} Delete Drive
+              </button>
+            </div>
           )}
         </div>
       </div>

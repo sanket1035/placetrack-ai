@@ -1,6 +1,7 @@
 import { useState } from "react";
-import { Plus } from "lucide-react";
+import { Plus, Trash2, Loader2 } from "lucide-react";
 import { api } from "@/lib/api";
+import type { Drive } from "../types/dashboard";
 import PageTitle from "./PageTitle";
 
 const AVAILABLE_DEPARTMENTS = [
@@ -16,11 +17,13 @@ const AVAILABLE_DEPARTMENTS = [
 export function DriveCreator({
   token,
   flash,
-  onCreated
+  onCreated,
+  drives = []
 }: {
   token: string;
   flash: (message: string) => void;
   onCreated: () => void;
+  drives?: Drive[];
 }) {
   const [form, setForm] = useState({
     company: "Cognizant",
@@ -32,6 +35,7 @@ export function DriveCreator({
   });
   const [allowedBranches, setAllowedBranches] = useState<string[]>(["Computer Engineering", "Information Technology"]);
   const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [deletingId, setDeletingId] = useState("");
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -88,6 +92,22 @@ export function DriveCreator({
       onCreated();
     } catch (error) {
       flash(error instanceof Error ? error.message : "Drive creation failed");
+    }
+  };
+
+  const deleteDrive = async (id: string, companyName: string, roleName: string) => {
+    if (!window.confirm(`Are you sure you want to delete the placement drive for ${companyName} (${roleName})? This will permanently delete all associated student applications.`)) {
+      return;
+    }
+    setDeletingId(id);
+    try {
+      await api(`/api/drives/${id}`, token, { method: "DELETE" });
+      flash("Drive deleted successfully");
+      onCreated();
+    } catch (error) {
+      flash(error instanceof Error ? error.message : "Failed to delete drive");
+    } finally {
+      setDeletingId("");
     }
   };
 
@@ -162,6 +182,47 @@ export function DriveCreator({
           <Plus size={16} /> Create drive
         </button>
       </section>
+
+      {drives && drives.length > 0 && (
+        <section className="card" style={{ marginTop: "24px", padding: "24px" }}>
+          <h3 style={{ fontSize: "18px", fontWeight: 700, marginBottom: "16px" }}>Manage Active Placement Drives</h3>
+          <div style={{ display: "grid", gap: "12px" }}>
+            {drives.map((d) => (
+              <div
+                key={d.id}
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  flexWrap: "wrap",
+                  gap: "12px",
+                  padding: "14px 16px",
+                  borderRadius: "10px",
+                  background: "var(--panel-2)",
+                  border: "1px solid var(--line)"
+                }}
+              >
+                <div>
+                  <strong style={{ fontSize: "14px", display: "block" }}>{d.company.name} — {d.role}</strong>
+                  <span style={{ fontSize: "12px", color: "var(--muted)" }}>
+                    ₹{d.package} LPA · {d.location} · Deadline: {new Date(d.deadline).toLocaleDateString()}
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  className="ghost-button"
+                  disabled={deletingId === d.id}
+                  onClick={() => deleteDrive(d.id, d.company.name, d.role)}
+                  style={{ color: "#ff4d4f", borderColor: "rgba(255, 77, 79, 0.3)" }}
+                >
+                  {deletingId === d.id ? <Loader2 className="spin" size={15} /> : <Trash2 size={15} />} Delete Drive
+                </button>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
     </>
   );
 }
+
