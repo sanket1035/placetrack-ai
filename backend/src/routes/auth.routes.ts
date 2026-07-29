@@ -11,13 +11,14 @@ import multer from "multer";
 import { z } from "zod";
 import { prisma } from "../lib/prisma.js";
 import { authenticate, signToken, authorize } from "../middleware/auth.js";
+import { loginLimiter, signupLimiter } from "../middleware/rateLimiter.js";
 import { UserRole } from "@prisma/client";
 import { audit } from "../lib/audit.js";
 import { predictReadiness } from "../services/readiness.js";
 
 export const authRouter = Router();
 
-authRouter.post("/login", async (request, response) => {
+authRouter.post("/login", loginLimiter, async (request, response) => {
   const input = z.object({ email: z.string().email(), password: z.string().min(6) }).parse(request.body);
   const user = await prisma.user.findUnique({
     where: { email: input.email.toLowerCase() },
@@ -31,7 +32,7 @@ authRouter.post("/login", async (request, response) => {
   response.json({ token: signToken(user.id, user.role), user: safeUser });
 });
 
-authRouter.post("/signup", async (request, response) => {
+authRouter.post("/signup", signupLimiter, async (request, response) => {
   const input = z.object({
     name: z.string().min(2),
     email: z.string().email(),
