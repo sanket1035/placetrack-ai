@@ -96,10 +96,11 @@ export function Opportunities({
                 />
 
                 {/* Badges row */}
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "6px" }}>
                   {hasEligibility && (
                     <div
                       className="status-badge"
+                      title={!eligible && drive.eligibility?.reasons ? drive.eligibility.reasons.join("\n") : undefined}
                       style={{
                         color: eligible ? "var(--success)" : "var(--error)",
                         background: eligible ? "rgba(27, 222, 204, 0.1)" : "rgba(255, 107, 107, 0.1)",
@@ -114,7 +115,7 @@ export function Opportunities({
                       }}
                     >
                       {eligible ? <CheckCircle2 size={10} /> : <X size={10} />}
-                      {eligible ? "Eligible" : "Not Eligible"}
+                      Check Eligibility: {eligible ? "Eligible" : "Ineligible"}
                     </div>
                   )}
                   <span
@@ -131,6 +132,28 @@ export function Opportunities({
                     Closes {new Date(drive.deadline).toLocaleDateString()}
                   </span>
                 </div>
+
+                {!eligible && drive.eligibility?.reasons && drive.eligibility.reasons.length > 0 && (
+                  <div
+                    style={{
+                      background: "rgba(255, 107, 107, 0.08)",
+                      border: "1px solid rgba(255, 107, 107, 0.2)",
+                      borderRadius: "8px",
+                      padding: "8px 12px",
+                      fontSize: "11px",
+                      color: "var(--error)"
+                    }}
+                  >
+                    <strong style={{ display: "block", fontSize: "10px", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "2px" }}>
+                      Eligibility Failure Reasons:
+                    </strong>
+                    <ul style={{ margin: 0, paddingLeft: "16px", display: "grid", gap: "2px" }}>
+                      {drive.eligibility.reasons.map((r, i) => (
+                        <li key={i}>{r}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
 
                 {/* Company Logo and Info Header */}
                 <div style={{ display: "flex", alignItems: "center", gap: "14px", marginTop: "4px" }}>

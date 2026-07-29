@@ -36,6 +36,22 @@ export type SessionUser = {
 
 export type LoginResponse = { token: string; user: SessionUser };
 
+export class ApiError extends Error {
+  status?: number;
+  reasons?: string[];
+  code?: string;
+  data?: any;
+
+  constructor(message: string, status?: number, reasons?: string[], code?: string, data?: any) {
+    super(message);
+    this.name = "ApiError";
+    this.status = status;
+    this.reasons = reasons;
+    this.code = code;
+    this.data = data;
+  }
+}
+
 async function parseResponse<T>(response: Response): Promise<T> {
   const text = await response.text();
   let data: any = {};
@@ -45,7 +61,9 @@ async function parseResponse<T>(response: Response): Promise<T> {
     data = { error: text || response.statusText || "Request failed" };
   }
   if (!response.ok) {
-    throw new Error(data.error ?? data.message ?? "Request failed");
+    const reasons = Array.isArray(data.reasons) ? data.reasons : undefined;
+    const msg = data.error ?? data.message ?? "Request failed";
+    throw new ApiError(msg, response.status, reasons, data.code, data);
   }
   return data as T;
 }

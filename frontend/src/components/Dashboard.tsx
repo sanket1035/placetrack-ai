@@ -634,14 +634,24 @@ function DriveDetailsModal({ drive, role, token, onClose, onApplied, flash }: {
   flash: (message: string) => void;
 }) {
   const [applying, setApplying] = useState(false);
+  const [applyError, setApplyError] = useState<{ message: string; reasons?: string[] } | null>(null);
+
   const apply = async () => {
     setApplying(true);
+    setApplyError(null);
     try {
       await api("/api/applications", token, { method: "POST", body: JSON.stringify({ driveId: drive.id }) });
       flash("Application submitted successfully!");
       onApplied();
-    } catch (error) {
-      flash(error instanceof Error ? error.message : "Could not submit application");
+    } catch (error: any) {
+      const reasons = error?.reasons ?? (Array.isArray(error?.data?.reasons) ? error.data.reasons : undefined);
+      const msg = error instanceof Error ? error.message : "Could not submit application";
+      setApplyError({ message: msg, reasons });
+      if (reasons && reasons.length > 0) {
+        flash(`Application rejected: ${reasons.join(". ")}`);
+      } else {
+        flash(msg);
+      }
     } finally {
       setApplying(false);
     }
@@ -689,19 +699,46 @@ function DriveDetailsModal({ drive, role, token, onClose, onApplied, flash }: {
         <div className={isEligible ? "drive-eligibility-card" : "drive-eligibility-card ineligible"}>
           <div className="drive-eligibility-header">
             <div>
-              <span className="card-kicker">Eligibility Status</span>
+              <span className="card-kicker">Check Eligibility</span>
               <h3 style={{ margin: "4px 0 0" }}>{isEligible ? "✓ Eligible to Apply" : "✗ Not Eligible"}</h3>
             </div>
             <span className={isEligible ? "drive-eligibility-status eligible" : "drive-eligibility-status ineligible"}>
               {isEligible ? "Eligible" : "Not Eligible"}
             </span>
           </div>
-          {!isEligible && drive.eligibility?.reasons && (
-            <p className="warning" style={{ margin: "4px 0 0" }}>
-              {drive.eligibility.reasons.join(", ")}
-            </p>
+          {!isEligible && drive.eligibility?.reasons && drive.eligibility.reasons.length > 0 && (
+            <ul style={{ margin: "8px 0 0", paddingLeft: "20px", fontSize: "12px", color: "var(--warning, #f7bd4e)", display: "grid", gap: "2px" }}>
+              {drive.eligibility.reasons.map((reason, i) => (
+                <li key={i}>{reason}</li>
+              ))}
+            </ul>
           )}
         </div>
+
+        {applyError && (
+          <div
+            className="warning-box"
+            style={{
+              marginTop: "12px",
+              padding: "12px 16px",
+              borderRadius: "10px",
+              background: "rgba(255, 77, 79, 0.1)",
+              border: "1px solid rgba(255, 77, 79, 0.3)",
+              color: "#ff4d4f"
+            }}
+          >
+            <strong style={{ display: "block", fontSize: "13px", marginBottom: "4px" }}>
+              ⚠️ {applyError.message}
+            </strong>
+            {applyError.reasons && applyError.reasons.length > 0 && (
+              <ul style={{ margin: "6px 0 0", paddingLeft: "20px", fontSize: "12px", display: "grid", gap: "4px" }}>
+                {applyError.reasons.map((reason, idx) => (
+                  <li key={idx}>{reason}</li>
+                ))}
+              </ul>
+            )}
+          </div>
+        )}
 
         <div className="drive-details-grid">
           <div className="drive-detail-section">
