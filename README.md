@@ -193,19 +193,33 @@ Resume PDFs are parsed via `pdf-parse` into raw text, then sent to Google Gemini
 
 ### Step 1 — Environment Setup
 
+Copy `.env.example` templates in both `backend/` and `frontend/` directories:
+
 ```bash
-cp .env.example .env
+# Copy backend environment configuration template
+cp backend/.env.example backend/.env
+
+# Copy frontend environment configuration template
+cp frontend/.env.example frontend/.env.local
 ```
 
-Configure the following in `.env`:
+#### Backend Environment Variables (`backend/.env.example`)
 
 | Variable | Description |
 |----------|-------------|
-| `DATABASE_URL` | Neon PostgreSQL pooler connection string |
-| `DIRECT_URL` | Neon direct URL for Prisma migrations |
-| `JWT_SECRET` | Secure string for signing auth tokens |
-| `GEMINI_API_KEY` | Google AI key (optional — heuristic fallback activates if absent) |
-| `FRONTEND_URL` | Allowed CORS origin (default: `http://localhost:3000`) |
+| `PORT` | Express REST API server port (default: `4000`) |
+| `DATABASE_URL` | PostgreSQL pooled connection string for Prisma Client |
+| `DIRECT_URL` | Direct PostgreSQL connection string for Prisma migrations |
+| `JWT_SECRET` | Secret string for signing and verifying JWT tokens |
+| `GEMINI_API_KEY` | Google Gemini API key for AI resume parsing & interview feedback |
+| `FRONTEND_URL` | Allowed CORS origin & email link base URL (default: `http://localhost:3000`) |
+
+#### Frontend Environment Variables (`frontend/.env.example`)
+
+| Variable | Description |
+|----------|-------------|
+| `NEXT_PUBLIC_API_URL` | Backend REST API base URL (default: `http://localhost:4000`) |
+
 
 ### Step 2 — Start Database
 
