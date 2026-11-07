@@ -34,7 +34,7 @@ export default function PracticePage() {
   }
 
   return (
-    <main className="app dark" style={{ padding: "40px 24px", minHeight: "100vh", position: "relative" }}>
+    <main className="app light" style={{ padding: "40px 24px", minHeight: "100vh", position: "relative" }}>
       {notice && (
         <div className="toast" style={{ position: "fixed", top: "20px", left: "50%", transform: "translateX(-50%)", zIndex: 1000 }}>
           {notice}

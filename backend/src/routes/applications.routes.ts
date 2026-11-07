@@ -4,12 +4,13 @@ import { z } from "zod";
 import { prisma } from "../lib/prisma.js";
 import { audit } from "../lib/audit.js";
 import { authenticate, authorize } from "../middleware/auth.js";
+import { attachScope, applicationWhere } from "../lib/scope.js";
 import { checkEligibility } from "../services/eligibility.js";
 import { emitToUser } from "../lib/socket.js";
 import { sendEmail, getEmailTemplate } from "../services/mailer.js";
 
 export const applicationsRouter = Router();
-applicationsRouter.use(authenticate);
+applicationsRouter.use(authenticate, attachScope);
 
 applicationsRouter.get("/", async (request, response) => {
   const querySchema = z.object({
@@ -33,6 +34,7 @@ applicationsRouter.get("/", async (request, response) => {
   if (status) where.status = status;
   if (driveId) where.driveId = driveId;
   if (targetStudentId) where.studentId = targetStudentId;
+  Object.assign(where, applicationWhere(request.scope!.department));
 
   const [total, items] = await Promise.all([
     prisma.application.count({ where }),
@@ -79,13 +81,16 @@ applicationsRouter.post("/", authorize(UserRole.STUDENT), async (request, respon
   response.status(201).json(application);
 });
 
-applicationsRouter.patch("/:id/status", authorize(UserRole.COORDINATOR, UserRole.ADMIN), async (request, response) => {
+applicationsRouter.patch("/:id/status", authorize(UserRole.TPC, UserRole.ADMIN), async (request, response) => {
   const input = z.object({ status: z.nativeEnum(ApplicationStatus), note: z.string().max(500).optional() }).parse(request.body);
   const current = await prisma.application.findUnique({
     where: { id: String(request.params.id) },
     include: { student: { include: { user: { select: { email: true } } } }, drive: { include: { company: true } } }
   });
   if (!current) return response.status(404).json({ error: "Application not found" });
+  if (request.scope!.department && current.student.branch !== request.scope!.department) {
+    return response.status(403).json({ error: "This student belongs to another department" });
+  }
   const timeline = Array.isArray(current.timeline) ? current.timeline : [];
   const application = await prisma.application.update({
     where: { id: current.id },
@@ -122,7 +127,7 @@ applicationsRouter.patch("/:id/status", authorize(UserRole.COORDINATOR, UserRole
   response.json(application);
 });
 
-applicationsRouter.post("/:id/interview", authorize(UserRole.COORDINATOR, UserRole.ADMIN), async (request, response) => {
+applicationsRouter.post("/:id/interview", authorize(UserRole.TPC, UserRole.ADMIN), async (request, response) => {
   const input = z.object({
     dateTime: z.coerce.date(), mode: z.enum(["ONLINE", "OFFLINE"]), locationOrLink: z.string().min(3)
   }).parse(request.body);
@@ -131,6 +136,9 @@ applicationsRouter.post("/:id/interview", authorize(UserRole.COORDINATOR, UserRo
     include: { student: { include: { user: { select: { email: true } } } }, drive: { include: { company: true } } }
   });
   if (!application) return response.status(404).json({ error: "Application not found" });
+  if (request.scope!.department && application.student.branch !== request.scope!.department) {
+    return response.status(403).json({ error: "This student belongs to another department" });
+  }
   const interview = await prisma.interview.upsert({
     where: { applicationId: application.id },
     create: { applicationId: application.id, ...input, status: "SCHEDULED" },

@@ -1,4 +1,10 @@
-export type Role = "STUDENT" | "COORDINATOR" | "ADMIN";
+export type Role = "STUDENT" | "TPC" | "ADMIN";
+
+export const ROLE_LABEL: Record<Role, string> = {
+  STUDENT: "Student",
+  TPC: "Training & Placement Coordinator",
+  ADMIN: "Administrator"
+};
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
 
@@ -13,6 +19,8 @@ export type NotificationItem = {
 export type SessionUser = {
   id: string;
   email: string;
+  name?: string | null;
+  avatarUrl?: string | null;
   role: Role;
   notifications?: NotificationItem[];
   student?: {
@@ -30,6 +38,7 @@ export type SessionUser = {
     resumeUrl?: string | null;
     mockTestCount?: number;
     emailEnabled?: boolean;
+    onboarded?: boolean;
   } | null;
   coordinator?: { id: string; department: string; phone?: string | null } | null;
 };
@@ -82,12 +91,6 @@ export async function api<T>(path: string, token?: string | null, init: RequestI
   }
   return parseResponse<T>(response);
 }
-
-export const demoAccounts = [
-  { label: "Student", email: "student@placetrack.ai", password: "Demo@123" },
-  { label: "Coordinator", email: "coordinator@placetrack.ai", password: "Demo@123" },
-  { label: "Admin", email: "admin@placetrack.ai", password: "Demo@123" }
-];
 
 // ─── Export Center helpers ─────────────────────────────────────────────────────
 

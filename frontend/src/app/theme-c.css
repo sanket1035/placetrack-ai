@@ -55,39 +55,6 @@
   --shadow-lg: none;
   --shadow-glow: none;
 }
-.app.dark {
-  --bg: #0F1A0B;
-  --panel: #14230E;
-  --panel-2: #1B2D14;
-  --panel-3: #223820;
-  --sidebar: #0F1A0B;
-  --line: #CFE8B8;
-  --line-dim: rgba(207, 232, 184, .18);
-  --hover: rgba(207, 232, 184, .08);
-  --text: #F2F6E8;
-  --text-dim: #D6E2C6;
-  --muted: #9CB088;
-  --primary: #FFE859;
-  --primary-dim: #FFF08A;
-  --secondary: #FFE859;
-  --accent: #FFE859;
-  --active-nav-bg: #FFE859;
-  --active-nav-text: #1B3A0A;
-  --active-nav-border: transparent;
-  --sidebar-text-color: #F2F6E8;
-  --sidebar-text-hover: #FFFFFF;
-  --welcome-bg: #1B2D14;
-  --welcome-text: #F2F6E8;
-  --welcome-accent: #FFE859;
-  --welcome-muted: #9CB088;
-  --sun: #FFE859;
-  --font-display: "Bricolage Grotesque", "Hanken Grotesk", sans-serif;
-  --font-mono: "JetBrains Mono", "Geist Mono", monospace;
-  --shadow-sm: none;
-  --shadow-md: none;
-  --shadow-lg: none;
-}
-
 /* Remove ambient glows */
 .app::before, .app::after { display: none; }
 .app { display: block; }
@@ -135,7 +102,6 @@ h1, h2, h3, h4 { font-family: var(--font-display); font-weight: 800; letter-spac
   width: auto; border-radius: 999px; padding: 9px 16px; background: var(--text); color: var(--bg);
   font-weight: 600; font-size: 13px;
 }
-.app.dark .sidebar-bottom > button { background: var(--sun); color: #1B3A0A; }
 .app .sidebar-bottom > button:hover { background: var(--primary-dim); color: var(--bg); }
 
 .app .workspace { margin: 0 auto; width: min(1180px, calc(100% - 48px)); }
@@ -189,12 +155,10 @@ h1, h2, h3, h4 { font-family: var(--font-display); font-weight: 800; letter-spac
   padding: 3px 10px; font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: .04em;
   align-self: flex-start; white-space: nowrap;
 }
-.app.dark .status-badge { background: var(--panel-3); }
 .app .primary-button {
   background: var(--text); color: var(--bg); box-shadow: none; border: 1px solid var(--text);
   border-radius: 999px; padding: 10px 18px; font-size: 13px; font-weight: 600;
 }
-.app.dark .primary-button { background: var(--sun); color: #1B3A0A; border-color: var(--sun); }
 .app .primary-button:hover:not(:disabled) { transform: none; box-shadow: none; background: var(--primary-dim); }
 .app .secondary-button, .app .ghost-button {
   background: transparent; border: 1px solid var(--line); color: var(--text); border-radius: 999px; font-weight: 600;
@@ -246,13 +210,11 @@ h1, h2, h3, h4 { font-family: var(--font-display); font-weight: 800; letter-spac
 .app.light .stat-card.tone-gold { background: var(--lilac); }
 .app.light .stat-card.tone-blue { background: var(--aqua); }
 .app.light .stat-card { color: #1B3A0A; }
-.app.dark .stat-card { background: var(--panel-2); }
 
 /* ── Readiness ring ─────────────────────────────────────────────────────────── */
 .app .readiness-ring { width: 150px; }
 .app .ring-track { stroke: var(--line-dim); stroke-width: 10; fill: none; }
 .app .ring-value { stroke: var(--text); stroke-width: 10; stroke-linecap: round; fill: none; filter: none; }
-.app.dark .ring-value { stroke: var(--sun); }
 .app .ring-label strong { font: 800 30px var(--font-display); color: var(--text); background: none; -webkit-text-fill-color: currentColor; }
 .app .ring-label span { font-family: var(--font-mono); font-size: 10px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); }
 
@@ -266,7 +228,6 @@ h1, h2, h3, h4 { font-family: var(--font-display); font-weight: 800; letter-spac
 .app.light .opportunity-card.pastel-1 { background: var(--sun); }
 .app.light .opportunity-card.pastel-2 { background: var(--lilac); }
 .app.light .opportunity-card.pastel-3 { background: var(--aqua); }
-.app.dark .opportunity-card { background: var(--panel-2); }
 .app .opportunity-card { padding: 22px; }
 .app .opportunity-card .status-badge.bad { background: #FDE2DE; color: #8A1C10; border-color: #8A1C10; }
 .app .opportunity-card .status-badge.ok { background: var(--bg); }
@@ -279,6 +240,53 @@ h1, h2, h3, h4 { font-family: var(--font-display); font-weight: 800; letter-spac
 /* ── Remove decorative glows / gradients left in markup ─────────────────────── */
 .app [class*="glow"], .app [class*="orb"] { display: none !important; }
 .app .avatar.big { background: var(--lilac); color: #1B3A0A; border: 1px solid var(--line); border-radius: 999px; box-shadow: none; }
-.app.dark .avatar.big, .app.dark .avatar { background: var(--sun); }
 .app .brand-mark svg { color: #1B3A0A; }
 .app .opportunity-card .opportunity-logo, .app .opportunity-card .deadline-chip { box-shadow: none; }
+
+/* ── Login ──────────────────────────────────────────────────────────────────── */
+.app.login-app { display: block !important; min-height: 100vh; padding: 24px !important; }
+.auth-shell { max-width: 1100px; margin: 0 auto; min-height: calc(100vh - 48px); display: grid; grid-template-columns: 1.1fr 1fr; gap: 14px; }
+.auth-hero, .auth-card { border: 1px solid var(--line); border-radius: 18px; padding: 36px; position: relative; }
+.auth-hero { background: var(--mint); display: flex; flex-direction: column; justify-content: space-between; gap: 40px; }
+.auth-hero .brand { padding: 0; }
+.auth-hero h1 { font: 800 clamp(34px, 5vw, 54px)/1.02 var(--font-display); letter-spacing: -.03em; margin: 14px 0 12px; max-width: 520px; }
+.auth-hero mark { background: linear-gradient(transparent 55%, var(--sun) 55%); color: inherit; }
+.auth-hero p { color: var(--text-dim); max-width: 440px; font-size: 15px; }
+.auth-tag { display: inline-block; background: var(--sun); color: #1B3A0A; border: 1px solid var(--line); border-radius: 999px; padding: 3px 12px; font: 500 11px var(--font-mono); letter-spacing: .06em; text-transform: uppercase; }
+.auth-foot { font: 500 11px var(--font-mono); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.auth-card { background: var(--panel); display: flex; flex-direction: column; justify-content: center; gap: 14px; }
+.auth-card h2 { font-size: 32px; margin: 0; }
+.auth-sub { color: var(--muted); margin: 0 0 8px; max-width: 380px; }
+.auth-google { min-height: 44px; }
+.auth-error { background: #FDE2DE; color: #8A1C10; border: 1px solid #8A1C10; border-radius: 10px; padding: 10px 14px; font-size: 13px; margin: 0; }
+.auth-notes { list-style: none; padding: 0; margin: 18px 0 0; display: grid; gap: 10px; color: var(--muted); font-size: 13px; }
+.auth-notes li { display: flex; gap: 8px; align-items: flex-start; }
+.auth-notes svg { flex: none; margin-top: 2px; }
+@media (max-width: 820px) {
+  .auth-shell { grid-template-columns: 1fr; min-height: 0; }
+  .auth-hero, .auth-card { padding: 24px; }
+  .auth-hero { gap: 24px; }
+}
+
+/* ── Highlighter style for key words in headings ────────────────────────────── */
+.app mark.hl, .app .auth-hero mark {
+  background: linear-gradient(transparent 56%, var(--sun) 56%);
+  color: inherit; padding: 0 .08em; border-radius: 2px;
+  -webkit-box-decoration-break: clone; box-decoration-break: clone;
+}
+
+/* ── Fixes ──────────────────────────────────────────────────────────────────── */
+.app .stat-card { align-items: stretch; text-align: left; }
+.app [class*="welcome"]::before, .app [class*="welcome"]::after { display: none !important; }
+.app .avatar.big { box-shadow: none !important; background: var(--sun); color: #1B3A0A; }
+
+/* ── Login: match the approved mockup ───────────────────────────────────────── */
+.app.login-app { padding: 42px 24px !important; }
+.auth-shell { max-width: 1132px; min-height: 640px; grid-template-columns: 1.1fr 1fr; align-items: stretch; }
+.auth-brand { font: 800 20px var(--font-display); letter-spacing: -.02em; }
+.auth-hero { padding: 36px 36px 30px; }
+.auth-hero h1 { font-size: 50px; max-width: 460px; }
+.auth-card { padding: 36px; }
+.auth-card h2 { font-size: 30px; }
+.auth-sub { font-size: 14px; margin-bottom: 14px; }
+.auth-google { margin-top: 4px; }

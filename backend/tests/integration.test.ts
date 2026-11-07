@@ -2,7 +2,8 @@ import request from "supertest";
 import { app } from "../src/server.js";
 import { prisma } from "../src/lib/prisma.js";
 import { signToken } from "../src/middleware/auth.js";
-import bcrypt from "bcryptjs";
+import { setGoogleVerifier } from "../src/lib/google.js";
+import { config } from "../src/lib/config.js";
 
 describe("PlaceTrack AI - Backend Integration Tests", () => {
   let studentToken: string;
@@ -30,14 +31,10 @@ describe("PlaceTrack AI - Backend Integration Tests", () => {
     await prisma.company.deleteMany();
     await prisma.user.deleteMany();
 
-    // 2. Hash password
-    const passwordHash = await bcrypt.hash("password123", 10);
-
     // 3. Create student user and profile
     const studentUser = await prisma.user.create({
       data: {
         email: "student@example.com",
-        passwordHash,
         role: "STUDENT",
         student: {
           create: {
@@ -61,7 +58,6 @@ describe("PlaceTrack AI - Backend Integration Tests", () => {
     const adminUser = await prisma.user.create({
       data: {
         email: "admin@example.com",
-        passwordHash,
         role: "ADMIN"
       }
     });
@@ -116,67 +112,136 @@ describe("PlaceTrack AI - Backend Integration Tests", () => {
     await prisma.$disconnect();
   });
 
-  describe("POST /api/auth/signup", () => {
-    it("creates a new student user successfully", async () => {
-      const response = await request(app)
-        .post("/api/auth/signup")
-        .send({
-          name: "John Smith",
-          email: "john@example.com",
-          password: "password123",
-          role: "STUDENT",
-          branch: "Electrical Engineering",
-          cgpa: 8.0,
-          graduationYear: 2026,
-          skills: ["Python", "MATLAB"],
-          backlogs: 0
-        });
+  describe("POST /api/auth/google", () => {
+    const fakeCredential = "x".repeat(40);
+    afterEach(() => setGoogleVerifier(null));
 
-      expect(response.status).toBe(201);
-      expect(response.body).toHaveProperty("token");
-      expect(response.body.user.email).toBe("john@example.com");
-      expect(response.body.user.role).toBe("STUDENT");
-      expect(response.body.user.student).toBeDefined();
-    });
-
-    it("returns 409 conflict for existing email", async () => {
-      const response = await request(app)
-        .post("/api/auth/signup")
-        .send({
-          name: "Jane Doe Copy",
-          email: "student@example.com",
-          password: "password123"
-        });
-
-      expect(response.status).toBe(409);
-      expect(response.body.error).toBe("Email already registered");
-    });
-  });
-
-  describe("POST /api/auth/login", () => {
-    it("authenticates student user successfully", async () => {
-      const response = await request(app)
-        .post("/api/auth/login")
-        .send({
-          email: "student@example.com",
-          password: "password123"
-        });
-
+    it("signs in an existing user by verified email and links the Google account", async () => {
+      setGoogleVerifier(async () => ({ sub: "g-student", email: "student@example.com", name: "Jane Doe" }));
+      const response = await request(app).post("/api/auth/google").send({ credential: fakeCredential });
       expect(response.status).toBe(200);
       expect(response.body).toHaveProperty("token");
       expect(response.body.user.email).toBe("student@example.com");
+      const user = await prisma.user.findUnique({ where: { email: "student@example.com" } });
+      expect(user?.googleId).toBe("g-student");
     });
 
-    it("returns 401 for invalid credentials", async () => {
-      const response = await request(app)
-        .post("/api/auth/login")
-        .send({
-          email: "student@example.com",
-          password: "wrongpassword"
-        });
+    it("refuses a different Google account for an already-linked email", async () => {
+      setGoogleVerifier(async () => ({ sub: "g-other", email: "student@example.com", name: "Impostor" }));
+      const response = await request(app).post("/api/auth/google").send({ credential: fakeCredential });
+      expect(response.status).toBe(403);
+    });
 
+    it("self-registers a student from any verified Gmail when no domain list is set", async () => {
+      setGoogleVerifier(async () => ({ sub: "g-new", email: "new.student@gmail.com", name: "New Student" }));
+      const response = await request(app).post("/api/auth/google").send({ credential: fakeCredential });
+      expect(response.status).toBe(200);
+      expect(response.body.user.role).toBe("STUDENT");
+      expect(response.body.user.student.onboarded).toBe(false);
+    });
+
+    it("rejects other domains when a domain allow-list is configured", async () => {
+      config.studentDomains.push("college.edu");
+      setGoogleVerifier(async () => ({ sub: "g-x", email: "x@gmail.com", name: "X" }));
+      const response = await request(app).post("/api/auth/google").send({ credential: fakeCredential });
+      config.studentDomains.pop();
+      expect(response.status).toBe(403);
+    });
+
+    it("rejects invalid Google tokens", async () => {
+      setGoogleVerifier(async () => { throw new Error("Invalid token"); });
+      const response = await request(app).post("/api/auth/google").send({ credential: fakeCredential });
       expect(response.status).toBe(401);
-      expect(response.body.error).toBe("Invalid email or password");
+    });
+  });
+
+  describe("Training & Placement Coordinator (department scope)", () => {
+    let tpcToken: string;
+    let csApplicationId: string;
+    let otherApplicationId: string;
+    let otherDriveId: string;
+
+    beforeAll(async () => {
+      const tpc = await prisma.user.create({
+        data: { email: "tpc.cs@example.com", name: "CS TPC", role: "TPC", coordinator: { create: { department: "Computer Science" } } }
+      });
+      tpcToken = signToken(tpc.id, "TPC");
+
+      const mech = await prisma.user.create({
+        data: {
+          email: "mech@example.com", role: "STUDENT",
+          student: { create: { name: "Mech Student", branch: "Mechanical", cgpa: 8, graduationYear: 2027, skills: [], onboarded: true } }
+        },
+        include: { student: true }
+      });
+      const mechDrive = await prisma.placementDrive.create({
+        data: {
+          company: { connect: { name: "Google" } }, role: "Design Engineer", package: 10, location: "Pune", jobType: "FULL_TIME",
+          description: "Mechanical design role", minCgpa: 6, allowedBranches: ["Mechanical"], maxBacklogs: 0, graduationYear: 2027,
+          deadline: new Date(Date.now() + 86400000 * 5)
+        }
+      });
+      otherDriveId = mechDrive.id;
+      const csDrive = await prisma.placementDrive.create({
+        data: {
+          company: { connect: { name: "Google" } }, role: "Data Engineer", package: 12, location: "Pune", jobType: "FULL_TIME",
+          description: "Data engineering role", minCgpa: 6, allowedBranches: ["Computer Science"], maxBacklogs: 0, graduationYear: 2027,
+          deadline: new Date(Date.now() + 86400000 * 5)
+        }
+      });
+      const csApp = await prisma.application.create({ data: { studentId, driveId: csDrive.id, timeline: [] } });
+      csApplicationId = csApp.id;
+      const otherApp = await prisma.application.create({ data: { studentId: mech.student!.id, driveId: mechDrive.id, timeline: [] } });
+      otherApplicationId = otherApp.id;
+    });
+
+    it("only lists applications of their own department", async () => {
+      const response = await request(app).get("/api/applications").set("Authorization", `Bearer ${tpcToken}`);
+      expect(response.status).toBe(200);
+      const ids = response.body.items.map((item: any) => item.id);
+      expect(ids).toContain(csApplicationId);
+      expect(ids).not.toContain(otherApplicationId);
+    });
+
+    it("cannot change the status of another department's application", async () => {
+      const response = await request(app)
+        .patch(`/api/applications/${otherApplicationId}/status`)
+        .set("Authorization", `Bearer ${tpcToken}`)
+        .send({ status: "SHORTLISTED" });
+      expect(response.status).toBe(403);
+    });
+
+    it("cannot edit or delete another department's drive", async () => {
+      const patch = await request(app).patch(`/api/drives/${otherDriveId}`).set("Authorization", `Bearer ${tpcToken}`).send({ role: "Hacked" });
+      expect(patch.status).toBe(403);
+      const del = await request(app).delete(`/api/drives/${otherDriveId}`).set("Authorization", `Bearer ${tpcToken}`);
+      expect(del.status).toBe(403);
+    });
+
+    it("only sees their department's drives and is forced to publish drives for it", async () => {
+      const list = await request(app).get("/api/drives").set("Authorization", `Bearer ${tpcToken}`);
+      expect(list.body.map((d: any) => d.id)).not.toContain(otherDriveId);
+      const created = await request(app).post("/api/drives").set("Authorization", `Bearer ${tpcToken}`).send({
+        company: { name: "Acme" }, role: "Developer", package: 6, location: "Pune", jobType: "FULL_TIME",
+        description: "Developer role at Acme", minCgpa: 6, allowedBranches: ["Mechanical", "Civil"], maxBacklogs: 0,
+        graduationYear: 2027, deadline: new Date(Date.now() + 86400000 * 9).toISOString()
+      });
+      expect(created.status).toBe(201);
+      expect(created.body.allowedBranches).toEqual(["Computer Science"]);
+    });
+
+    it("admin can invite a TPC for a department", async () => {
+      const response = await request(app).post("/api/auth/users/tpc").set("Authorization", `Bearer ${adminToken}`)
+        .send({ email: "tpc.civil@example.com", name: "Civil TPC", department: "Civil" });
+      expect(response.status).toBe(201);
+      expect(response.body.role).toBe("TPC");
+      expect(response.body.coordinator.department).toBe("Civil");
+    });
+
+    it("a TPC cannot invite other TPCs", async () => {
+      const response = await request(app).post("/api/auth/users/tpc").set("Authorization", `Bearer ${tpcToken}`)
+        .send({ email: "x@example.com", name: "X Person", department: "Civil" });
+      expect(response.status).toBe(403);
     });
   });
 
@@ -503,11 +568,8 @@ describe("PlaceTrack AI - Backend Integration Tests", () => {
   describe("Centralized Error Handler Middleware", () => {
     it("returns VALIDATION_ERROR for Zod validation errors", async () => {
       const response = await request(app)
-        .post("/api/auth/signup")
-        .send({
-          email: "bad-email",
-          password: "12"
-        });
+        .post("/api/auth/google")
+        .send({ credential: "short" });
 
       expect(response.status).toBe(400);
       expect(response.body).toHaveProperty("error");

@@ -70,7 +70,7 @@ export function Analytics({
     <>
       <PageTitle
         eyebrow="Placement intelligence"
-        title="Coordinator analytics."
+        title="Department analytics."
         copy="Placement rate, packages, active companies, and branch readiness."
       />
       <div className="analytics-stats" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "16px", marginBottom: "24px" }}>

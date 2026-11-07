@@ -2,10 +2,11 @@ import { Router } from "express";
 import { ApplicationStatus, DriveStatus, UserRole } from "@prisma/client";
 import { prisma } from "../lib/prisma.js";
 import { authenticate } from "../middleware/auth.js";
+import { attachScope, applicationWhere, driveWhere, studentWhere } from "../lib/scope.js";
 import { predictReadiness } from "../services/readiness.js";
 
 export const dashboardRouter = Router();
-dashboardRouter.use(authenticate);
+dashboardRouter.use(authenticate, attachScope);
 
 dashboardRouter.get("/", async (request, response) => {
   if (request.auth!.role === UserRole.STUDENT) {
@@ -63,14 +64,15 @@ dashboardRouter.get("/", async (request, response) => {
     });
   }
 
+  const department = request.scope!.department;
   const [students, companies, drives, applications, selectedRows, averages, branchRows] = await Promise.all([
-    prisma.student.count(),
-    prisma.company.count(),
-    prisma.placementDrive.count({ where: { status: DriveStatus.OPEN } }),
-    prisma.application.count(),
-    prisma.application.findMany({ where: { status: ApplicationStatus.SELECTED }, distinct: ["studentId"], select: { studentId: true } }),
-    prisma.placementDrive.aggregate({ _avg: { package: true }, _max: { package: true } }),
-    prisma.student.groupBy({ by: ["branch"], _count: { id: true }, _avg: { readinessScore: true } })
+    prisma.student.count({ where: studentWhere(department) }),
+    prisma.company.count({ where: department ? { drives: { some: driveWhere(department) } } : {} }),
+    prisma.placementDrive.count({ where: { status: DriveStatus.OPEN, ...driveWhere(department) } }),
+    prisma.application.count({ where: applicationWhere(department) }),
+    prisma.application.findMany({ where: { status: ApplicationStatus.SELECTED, ...applicationWhere(department) }, distinct: ["studentId"], select: { studentId: true } }),
+    prisma.placementDrive.aggregate({ where: driveWhere(department), _avg: { package: true }, _max: { package: true } }),
+    prisma.student.groupBy({ by: ["branch"], where: studentWhere(department), _count: { id: true }, _avg: { readinessScore: true } })
   ]);
   const selected = selectedRows.length;
   response.json({

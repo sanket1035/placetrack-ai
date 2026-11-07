@@ -6,13 +6,14 @@ import fs from "fs";
 import path from "path";
 import { prisma } from "../lib/prisma.js";
 import { authenticate, authorize } from "../middleware/auth.js";
+import { attachScope, driveWhere } from "../lib/scope.js";
 import { checkEligibility } from "../services/eligibility.js";
 import { audit } from "../lib/audit.js";
 import { emitToUser } from "../lib/socket.js";
 
 export const drivesRouter = Router();
 
-drivesRouter.use(authenticate);
+drivesRouter.use(authenticate, attachScope);
 
 // ─── Advanced Multi-Condition Filter Search ───────────────────────────────────
 // Supports: branch, cgpa, minPkg, maxPkg, gradYear, company, status
@@ -21,7 +22,7 @@ drivesRouter.get("/search", async (request, response) => {
   const { branch, cgpa, minPkg, maxPkg, gradYear, company, status } = request.query;
 
   // Build Prisma WHERE clause dynamically — only include defined filters
-  const where: Record<string, unknown> = {};
+  const where: Record<string, unknown> = { ...driveWhere(request.scope!.department) };
 
   if (branch && typeof branch === "string") {
     where.allowedBranches = { has: branch };
@@ -87,7 +88,7 @@ drivesRouter.get("/", async (request, response) => {
     ? new Set((await prisma.application.findMany({ where: { studentId: user.student.id }, select: { driveId: true } })).map((item) => item.driveId))
     : new Set<string>();
   const drives = await prisma.placementDrive.findMany({
-    where: request.auth!.role === UserRole.STUDENT ? { status: DriveStatus.OPEN } : undefined,
+    where: request.auth!.role === UserRole.STUDENT ? { status: DriveStatus.OPEN } : driveWhere(request.scope!.department),
     include: { company: true, _count: { select: { applications: true } } },
     orderBy: { deadline: "asc" }
   });
@@ -125,9 +126,11 @@ const driveSchema = z.object({
   status: z.nativeEnum(DriveStatus).default(DriveStatus.OPEN)
 });
 
-drivesRouter.post("/", authorize(UserRole.COORDINATOR, UserRole.ADMIN), async (request, response) => {
+drivesRouter.post("/", authorize(UserRole.TPC, UserRole.ADMIN), async (request, response) => {
   const input = driveSchema.parse(request.body);
   const { company, ...driveInput } = input;
+  // A TPC can only open drives for their own department.
+  if (request.scope!.department) driveInput.allowedBranches = [request.scope!.department];
   const drive = await prisma.placementDrive.create({
     data: {
       ...driveInput,
@@ -144,7 +147,7 @@ drivesRouter.post("/", authorize(UserRole.COORDINATOR, UserRole.ADMIN), async (r
 
   // Find all eligible students and send notifications
   try {
-    const students = await prisma.student.findMany();
+    const students = await prisma.student.findMany({ where: request.scope!.department ? { branch: request.scope!.department } : {} });
     for (const student of students) {
       const eligibility = checkEligibility(student, drive);
       if (eligibility.eligible) {
@@ -182,15 +185,19 @@ const patchDriveSchema = z.object({
   status: z.nativeEnum(DriveStatus).optional()
 });
 
-drivesRouter.patch("/:id", authorize(UserRole.COORDINATOR, UserRole.ADMIN), async (request, response) => {
+drivesRouter.patch("/:id", authorize(UserRole.TPC, UserRole.ADMIN), async (request, response) => {
   const id = String(request.params.id);
   const existingDrive = await prisma.placementDrive.findUnique({ where: { id } });
   if (!existingDrive) {
     return response.status(404).json({ error: "Drive not found" });
   }
+  if (request.scope!.department && !existingDrive.allowedBranches.includes(request.scope!.department)) {
+    return response.status(403).json({ error: "This drive belongs to another department" });
+  }
 
   const input = patchDriveSchema.parse(request.body);
   const { company, ...driveInput } = input;
+  if (request.scope!.department && driveInput.allowedBranches) driveInput.allowedBranches = [request.scope!.department];
 
   const drive = await prisma.placementDrive.update({
     where: { id },
@@ -215,11 +222,14 @@ drivesRouter.patch("/:id", authorize(UserRole.COORDINATOR, UserRole.ADMIN), asyn
   response.json(drive);
 });
 
-drivesRouter.delete("/:id", authorize(UserRole.COORDINATOR, UserRole.ADMIN), async (request, response) => {
+drivesRouter.delete("/:id", authorize(UserRole.TPC, UserRole.ADMIN), async (request, response) => {
   const id = String(request.params.id);
   const existingDrive = await prisma.placementDrive.findUnique({ where: { id } });
   if (!existingDrive) {
     return response.status(404).json({ error: "Drive not found" });
+  }
+  if (request.scope!.department && !existingDrive.allowedBranches.includes(request.scope!.department)) {
+    return response.status(403).json({ error: "This drive belongs to another department" });
   }
 
   await prisma.placementDrive.delete({
@@ -306,7 +316,7 @@ async function uploadToCloud(fileBuffer: Buffer, mimeType: string, companyId: st
   return `/uploads/${filename}`;
 }
 
-drivesRouter.post("/companies/:id/logo", authorize(UserRole.COORDINATOR, UserRole.ADMIN), upload.single("logo"), async (request, response) => {
+drivesRouter.post("/companies/:id/logo", authorize(UserRole.TPC, UserRole.ADMIN), upload.single("logo"), async (request, response) => {
   const id = String(request.params.id);
   const file = request.file;
   if (!file) {

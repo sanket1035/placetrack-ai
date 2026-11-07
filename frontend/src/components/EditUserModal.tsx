@@ -48,7 +48,7 @@ export default function EditUserModal({
           email,
           role,
           name: role === "STUDENT" ? name : undefined,
-          branch: role === "STUDENT" || role === "COORDINATOR" ? branch : undefined,
+          branch: role === "STUDENT" || role === "TPC" ? branch : undefined,
           cgpa: role === "STUDENT" ? Number(cgpa) : undefined,
           backlogs: role === "STUDENT" ? Number(backlogs) : undefined,
           skills: role === "STUDENT" ? selectedSkills : undefined
@@ -58,28 +58,7 @@ export default function EditUserModal({
       flash("User updated successfully");
       onClose();
     } catch (error) {
-      console.warn("Backend error, falling back to local update:", error);
-      const mockUpdated: SessionUser = {
-        ...user,
-        email: email.toLowerCase(),
-        role,
-        student: role === "STUDENT" ? {
-          id: user.student?.id ?? "student_mock_" + Math.random().toString(36).substring(2, 9),
-          name: name || "New Student",
-          branch,
-          cgpa: Number(cgpa) || 7.0,
-          backlogs: Number(backlogs) || 0,
-          graduationYear: user.student?.graduationYear ?? 2027,
-          skills: selectedSkills
-        } : null,
-        coordinator: role === "COORDINATOR" ? {
-          id: user.coordinator?.id ?? "coord_mock_" + Math.random().toString(36).substring(2, 9),
-          department: branch
-        } : null
-      };
-      onSaved(mockUpdated);
-      flash("User updated (local fallback)");
-      onClose();
+      flash(error instanceof Error ? error.message : "Could not update the user");
     } finally {
       setSaving(false);
     }
@@ -100,7 +79,7 @@ export default function EditUserModal({
           <label style={{ gridColumn: "1 / -1" }}>User Role
             <select value={role} onChange={(e) => setRole(e.target.value as Role)} style={{ border: "1px solid var(--line)", background: "var(--panel-2)", color: "var(--text)", borderRadius: "10px", padding: "12px", outline: "none", fontSize: "12px", fontWeight: 500 }}>
               <option value="STUDENT">STUDENT</option>
-              <option value="COORDINATOR">COORDINATOR</option>
+              <option value="TPC">Training & Placement Coordinator</option>
               <option value="ADMIN">ADMIN</option>
             </select>
           </label>
@@ -127,7 +106,7 @@ export default function EditUserModal({
             </>
           )}
 
-          {role === "COORDINATOR" && (
+          {role === "TPC" && (
             <label style={{ gridColumn: "1 / -1" }}>Department / Branch
               <select value={branch} onChange={(e) => setBranch(e.target.value)} style={{ border: "1px solid var(--line)", background: "var(--panel-2)", color: "var(--text)", borderRadius: "10px", padding: "12px", outline: "none", fontSize: "12px", fontWeight: 500 }}>
                 {AVAILABLE_DEPARTMENTS.map((dept) => <option key={dept} value={dept}>{dept}</option>)}

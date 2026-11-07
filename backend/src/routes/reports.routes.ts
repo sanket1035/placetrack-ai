@@ -3,10 +3,13 @@ import { UserRole } from "@prisma/client";
 import { prisma } from "../lib/prisma.js";
 import { authenticate, authorize } from "../middleware/auth.js";
 import { audit } from "../lib/audit.js";
+import { attachScope, applicationWhere, driveWhere, studentWhere } from "../lib/scope.js";
 import { toCsv, toJson, exportFilename } from "../utils/exportUtils.js";
 
 export const reportsRouter = Router();
-reportsRouter.use(authenticate, authorize(UserRole.COORDINATOR, UserRole.ADMIN));
+reportsRouter.use(authenticate, authorize(UserRole.TPC, UserRole.ADMIN), attachScope);
+
+const dept = (request: { scope?: { department: string | null } }) => request.scope!.department;
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -128,6 +131,7 @@ function mapDriveJson(item: any) {
 
 reportsRouter.get("/applications.csv", async (request, response) => {
   const applications = await prisma.application.findMany({
+    where: applicationWhere(dept(request)),
     include: {
       student: { include: { user: true } },
       drive: { include: { company: true } },
@@ -152,6 +156,7 @@ reportsRouter.get("/applications.csv", async (request, response) => {
 
 reportsRouter.get("/applications.json", async (request, response) => {
   const applications = await prisma.application.findMany({
+    where: applicationWhere(dept(request)),
     include: {
       student: { include: { user: true } },
       drive: { include: { company: true } },
@@ -177,6 +182,7 @@ reportsRouter.get("/applications.json", async (request, response) => {
 
 reportsRouter.get("/students.csv", async (request, response) => {
   const students = await prisma.student.findMany({
+    where: studentWhere(dept(request)),
     include: {
       user: true,
       _count: { select: { applications: true, testResults: true } },
@@ -197,6 +203,7 @@ reportsRouter.get("/students.csv", async (request, response) => {
 
 reportsRouter.get("/students.json", async (request, response) => {
   const students = await prisma.student.findMany({
+    where: studentWhere(dept(request)),
     include: {
       user: true,
       _count: { select: { applications: true, testResults: true } },
@@ -219,6 +226,7 @@ reportsRouter.get("/students.json", async (request, response) => {
 
 reportsRouter.get("/drives.csv", async (request, response) => {
   const drives = await prisma.placementDrive.findMany({
+    where: driveWhere(dept(request)),
     include: {
       company: true,
       _count: { select: { applications: true } },
@@ -239,6 +247,7 @@ reportsRouter.get("/drives.csv", async (request, response) => {
 
 reportsRouter.get("/drives.json", async (request, response) => {
   const drives = await prisma.placementDrive.findMany({
+    where: driveWhere(dept(request)),
     include: {
       company: true,
       _count: { select: { applications: true } },
@@ -268,14 +277,14 @@ reportsRouter.get("/summary.json", async (request, response) => {
     avgCgpa,
     drives,
   ] = await Promise.all([
-    prisma.student.count(),
-    prisma.placementDrive.count(),
-    prisma.application.count(),
-    prisma.application.count({ where: { status: "SELECTED" } }),
-    prisma.student.aggregate({ _avg: { cgpa: true } }),
+    prisma.student.count({ where: studentWhere(dept(request)) }),
+    prisma.placementDrive.count({ where: driveWhere(dept(request)) }),
+    prisma.application.count({ where: applicationWhere(dept(request)) }),
+    prisma.application.count({ where: { status: "SELECTED", ...applicationWhere(dept(request)) } }),
+    prisma.student.aggregate({ where: studentWhere(dept(request)), _avg: { cgpa: true } }),
     prisma.placementDrive.findMany({
       include: { company: true, _count: { select: { applications: true } } },
-      where: { status: { in: ["OPEN", "COMPLETED"] } },
+      where: { status: { in: ["OPEN", "COMPLETED"] }, ...driveWhere(dept(request)) },
     }),
   ]);
 
@@ -319,12 +328,15 @@ reportsRouter.get("/summary.json", async (request, response) => {
 reportsRouter.get("/analytics", async (request, response) => {
   const [applications, drives, students] = await Promise.all([
     prisma.application.findMany({
+      where: applicationWhere(dept(request)),
       select: { appliedAt: true, status: true },
     }),
     prisma.placementDrive.findMany({
+      where: driveWhere(dept(request)),
       select: { package: true, status: true },
     }),
     prisma.student.findMany({
+      where: studentWhere(dept(request)),
       select: { branch: true, applications: { select: { status: true } } },
     }),
   ]);

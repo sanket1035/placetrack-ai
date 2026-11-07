@@ -6,91 +6,90 @@ function getFirstString(param: unknown): string | undefined {
   if (Array.isArray(param)) return param[0];
   return undefined;
 }
-import bcrypt from "bcryptjs";
 import multer from "multer";
 import { z } from "zod";
 import { prisma } from "../lib/prisma.js";
 import { authenticate, signToken, authorize } from "../middleware/auth.js";
-import { loginLimiter, signupLimiter } from "../middleware/rateLimiter.js";
+import { loginLimiter } from "../middleware/rateLimiter.js";
+import { config } from "../lib/config.js";
+import { verifyGoogleCredential } from "../lib/google.js";
+import { attachScope } from "../lib/scope.js";
 import { UserRole } from "@prisma/client";
 import { audit } from "../lib/audit.js";
 import { predictReadiness } from "../services/readiness.js";
 
 export const authRouter = Router();
 
-authRouter.post("/login", loginLimiter, async (request, response) => {
-  const input = z.object({ email: z.string().email(), password: z.string().min(6) }).parse(request.body);
-  const user = await prisma.user.findUnique({
-    where: { email: input.email.toLowerCase() },
+/**
+ * Google sign-in is the only way to authenticate.
+ *  - existing user (invited TPC, pre-registered student, admin): linked by verified email
+ *  - ADMIN_EMAILS: becomes ADMIN on first sign-in
+ *  - any other verified Google email self-registers as STUDENT (profile completed in onboarding);
+ *    set ALLOWED_STUDENT_EMAIL_DOMAINS to optionally restrict this to specific domains
+ *  - TPCs can only be invited by an admin.
+ */
+authRouter.post("/google", loginLimiter, async (request, response) => {
+  const { credential } = z.object({ credential: z.string().min(20) }).parse(request.body);
+  let profile;
+  try {
+    profile = await verifyGoogleCredential(credential);
+  } catch (error: any) {
+    return response.status(401).json({ error: error?.message ?? "Google verification failed" });
+  }
+
+  const domain = profile.email.split("@")[1] ?? "";
+  let user = await prisma.user.findUnique({
+    where: { email: profile.email },
     include: { student: true, coordinator: true }
   });
-  if (!user || !(await bcrypt.compare(input.password, user.passwordHash))) {
-    return response.status(401).json({ error: "Invalid email or password" });
+
+  if (user?.googleId && user.googleId !== profile.sub) {
+    return response.status(403).json({ error: "This email is linked to a different Google account" });
   }
-  audit(user.id, "LOGIN", "auth").catch(() => {});
-  const { passwordHash: _, ...safeUser } = user;
-  response.json({ token: signToken(user.id, user.role), user: safeUser });
-});
 
-authRouter.post("/signup", signupLimiter, async (request, response) => {
-  const input = z.object({
-    name: z.string().min(2),
-    email: z.string().email(),
-    password: z.string().min(6),
-    role: z.enum(["STUDENT", "COORDINATOR"]).default("STUDENT"),
-    branch: z.string().min(2).default("Computer Engineering"),
-    cgpa: z.number().min(0).max(10).default(7),
-    graduationYear: z.number().int().min(2024).max(2035).default(2027),
-    skills: z.array(z.string()).default(["Java", "SQL", "Communication"]),
-    backlogs: z.number().int().min(0).max(10).default(0)
-  }).parse(request.body);
-
-  const existing = await prisma.user.findUnique({ where: { email: input.email.toLowerCase() } });
-  if (existing) return response.status(409).json({ error: "Email already registered" });
-
-  const passwordHash = await bcrypt.hash(input.password, 10);
-
-  let userData: Parameters<typeof prisma.user.create>[0]["data"];
-
-  if (input.role === "COORDINATOR") {
-    userData = {
-      email: input.email.toLowerCase(),
-      passwordHash,
-      role: "COORDINATOR",
-      coordinator: { create: { department: input.branch } }
-    };
+  if (!user) {
+    if (config.adminEmails.includes(profile.email)) {
+      user = await prisma.user.create({
+        data: { email: profile.email, name: profile.name, avatarUrl: profile.picture, googleId: profile.sub, role: "ADMIN" },
+        include: { student: true, coordinator: true }
+      });
+    } else if (config.studentDomains.length === 0 || config.studentDomains.includes(domain)) {
+      user = await prisma.user.create({
+        data: {
+          email: profile.email,
+          name: profile.name,
+          avatarUrl: profile.picture,
+          googleId: profile.sub,
+          role: "STUDENT",
+          student: {
+            create: { name: profile.name, branch: "Undeclared", cgpa: 0, graduationYear: new Date().getFullYear() + 1, skills: [], onboarded: false }
+          }
+        },
+        include: { student: true, coordinator: true }
+      });
+    } else {
+      return response.status(403).json({
+        error: "This email domain is not allowed to sign up. Use an allowed email, or ask your Training & Placement Coordinator."
+      });
+    }
+    await audit(user.id, "SIGNUP", "auth");
   } else {
-    const readinessScore = Math.min(95, Math.max(35, Math.round(input.cgpa * 8 + input.skills.length * 3 - input.backlogs * 8)));
-    userData = {
-      email: input.email.toLowerCase(),
-      passwordHash,
-      role: "STUDENT",
-      student: {
-        create: {
-          name: input.name,
-          branch: input.branch,
-          cgpa: input.cgpa,
-          graduationYear: input.graduationYear,
-          skills: input.skills,
-          backlogs: input.backlogs,
-          readinessScore,
-          mockTestCount: 0
-        }
-      }
-    };
+    user = await prisma.user.update({
+      where: { id: user.id },
+      data: { googleId: profile.sub, name: user.name ?? profile.name, avatarUrl: profile.picture ?? user.avatarUrl, lastLoginAt: new Date() },
+      include: { student: true, coordinator: true }
+    });
+    await audit(user.id, "LOGIN", "auth").catch(() => {});
   }
 
-  const user = await prisma.user.create({ data: userData, include: { student: true, coordinator: true } });
-  await audit(user.id, "SIGNUP", "auth");
-  const { passwordHash: _, ...safeUser } = user;
-  response.status(201).json({ token: signToken(user.id, user.role), user: safeUser });
+  response.json({ token: signToken(user.id, user.role), user });
 });
 
 authRouter.get("/me", authenticate, async (request, response) => {
   const user = await prisma.user.findUnique({
     where: { id: request.auth!.userId },
     select: {
-      id: true, email: true, role: true, createdAt: true,
+      id: true, email: true, name: true, avatarUrl: true, role: true, createdAt: true,
       student: true, coordinator: true,
       notifications: { where: { isRead: false }, orderBy: { createdAt: "desc" }, take: 10 }
     }
@@ -124,7 +123,7 @@ authRouter.patch("/me/student", authenticate, async (request, response) => {
 
   const updated = await prisma.student.update({
     where: { id: student.id },
-    data: { ...input, readinessScore },
+    data: { ...input, readinessScore, onboarded: true },
     include: { user: { select: { id: true, email: true, role: true } } }
   });
   await audit(request.auth!.userId, "UPDATE", "student-profile", { studentId: student.id });
@@ -138,11 +137,7 @@ authRouter.get("/users", authenticate, authorize(UserRole.ADMIN), async (request
     include: { student: true, coordinator: true },
     orderBy: { email: "asc" }
   });
-  const safeUsers = users.map(user => {
-    const { passwordHash: _, ...safeUser } = user;
-    return safeUser;
-  });
-  response.json(safeUsers);
+  response.json(users);
 });
 
 authRouter.delete("/users/:id", authenticate, authorize(UserRole.ADMIN), async (request, response) => {
@@ -167,7 +162,7 @@ authRouter.patch("/users/:id", authenticate, authorize(UserRole.ADMIN), async (r
   const input = z.object({
     name: z.string().min(2).optional(),
     email: z.string().email().optional(),
-    role: z.enum(["STUDENT", "COORDINATOR", "ADMIN"]).optional(),
+    role: z.enum(["STUDENT", "TPC", "ADMIN"]).optional(),
     branch: z.string().min(2).optional(),
     graduationYear: z.number().int().min(2024).max(2035).optional(),
     cgpa: z.number().min(0).max(10).optional(),
@@ -203,7 +198,7 @@ authRouter.patch("/users/:id", authenticate, authorize(UserRole.ADMIN), async (r
             readinessScore: 70
           }
       });
-    } else if (input.role === "COORDINATOR" && !user.coordinator) {
+    } else if (input.role === "TPC" && !user.coordinator) {
       await prisma.student.deleteMany({ where: { userId: id } });
       await prisma.coordinator.create({
         data: {
@@ -241,7 +236,7 @@ authRouter.patch("/users/:id", authenticate, authorize(UserRole.ADMIN), async (r
   }
 
   // Update coordinator profile details if user is/remains a coordinator
-  if (updatedUser.role === "COORDINATOR") {
+  if (updatedUser.role === "TPC") {
     const coordinator = await prisma.coordinator.findUnique({ where: { userId: id } });
     if (coordinator) {
       await prisma.coordinator.update({
@@ -260,36 +255,30 @@ authRouter.patch("/users/:id", authenticate, authorize(UserRole.ADMIN), async (r
     include: { student: true, coordinator: true }
   });
   if (finalUser) {
-    const { passwordHash: _, ...safeUser } = finalUser;
-    return response.json(safeUser);
+    return response.json(finalUser);
   }
   response.json({ success: true });
 });
 
-authRouter.post("/users/coordinator", authenticate, authorize(UserRole.ADMIN), async (request, response) => {
+/** Admin invites a Training & Placement Coordinator for one department. They activate the account by signing in with Google using this email. */
+authRouter.post("/users/tpc", authenticate, authorize(UserRole.ADMIN), async (request, response) => {
   const input = z.object({
     email: z.string().email(),
-    password: z.string().min(6),
+    name: z.string().min(2),
     department: z.string().min(2)
   }).parse(request.body);
 
-  const existing = await prisma.user.findUnique({ where: { email: input.email.toLowerCase() } });
+  const email = input.email.toLowerCase();
+  const existing = await prisma.user.findUnique({ where: { email } });
   if (existing) return response.status(409).json({ error: "Email already registered" });
 
-  const passwordHash = await bcrypt.hash(input.password, 10);
   const user = await prisma.user.create({
-    data: {
-      email: input.email.toLowerCase(),
-      passwordHash,
-      role: "COORDINATOR",
-      coordinator: { create: { department: input.department } }
-    },
+    data: { email, name: input.name, role: "TPC", coordinator: { create: { department: input.department } } },
     include: { coordinator: true }
   });
-  
-  await audit(request.auth!.userId, "CREATE_COORDINATOR", "auth", { newCoordinatorId: user.id });
-  const { passwordHash: _, ...safeUser } = user;
-  response.status(201).json(safeUser);
+
+  await audit(request.auth!.userId, "INVITE_TPC", "auth", { newTpcId: user.id, department: input.department });
+  response.status(201).json(user);
 });
 
 function parseCSV(text: string): string[][] {
@@ -346,7 +335,7 @@ const upload = multer({
   limits: { fileSize: 5 * 1024 * 1024 } // Max 5 MB
 });
 
-authRouter.post("/bulk-import", authenticate, authorize(UserRole.COORDINATOR, UserRole.ADMIN), upload.single("file"), async (request, response) => {
+authRouter.post("/bulk-import", authenticate, authorize(UserRole.TPC, UserRole.ADMIN), attachScope, upload.single("file"), async (request, response) => {
   const file = request.file;
   if (!file) {
     return response.status(400).json({ error: "No CSV file uploaded" });
@@ -433,7 +422,14 @@ authRouter.post("/bulk-import", authenticate, authorize(UserRole.COORDINATOR, Us
     }
 
     const skills = skillsRaw ? skillsRaw.split(",").map(s => s.trim()).filter(s => s !== "") : [];
-    const defaultPassword = "Welcome@123";
+
+    // A TPC may only import students of their own department.
+    const department = request.scope!.department;
+    if (department && branch.toLowerCase() !== department.toLowerCase()) {
+      failedCount++;
+      errors.push({ row: rowNum, reason: `Branch "${branch}" is outside your department (${department})` });
+      continue;
+    }
 
     try {
       const existing = await prisma.user.findUnique({ where: { email } });
@@ -443,16 +439,16 @@ authRouter.post("/bulk-import", authenticate, authorize(UserRole.COORDINATOR, Us
         continue;
       }
 
-      const passwordHash = await bcrypt.hash(defaultPassword, 10);
       const readinessScore = Math.min(95, Math.max(35, Math.round(cgpa * 8 + skills.length * 3 - backlogs * 8)));
 
       await prisma.user.create({
         data: {
           email,
-          passwordHash,
+          name,
           role: "STUDENT",
           student: {
             create: {
+              onboarded: true,
               name,
               branch,
               cgpa,

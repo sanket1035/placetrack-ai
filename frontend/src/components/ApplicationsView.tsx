@@ -81,7 +81,7 @@ export function Applications({
     try {
       await api(`/api/applications/${id}/status`, token, {
         method: "PATCH",
-        body: JSON.stringify({ status: statusVal, note: "Updated from coordinator UI" })
+        body: JSON.stringify({ status: statusVal, note: "Updated by Training & Placement" })
       });
       flash("Application status updated");
       fetchPage();

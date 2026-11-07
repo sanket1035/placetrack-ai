@@ -25,7 +25,7 @@ testsRouter.get("/:id", async (request, response) => {
   response.json(test);
 });
 
-testsRouter.post("/", authorize(UserRole.COORDINATOR, UserRole.ADMIN), async (request, response) => {
+testsRouter.post("/", authorize(UserRole.TPC, UserRole.ADMIN), async (request, response) => {
   const input = z.object({
     title: z.string().min(3), duration: z.number().int().positive(),
     sectionConfig: z.record(z.string(), z.number()),
