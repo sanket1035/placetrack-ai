@@ -162,6 +162,21 @@ describe("PlaceTrack AI - Backend Integration Tests", () => {
       }
     });
 
+    it("ends sessions of students outside the allowed domain on their next request", async () => {
+      setGoogleVerifier(async () => ({ sub: "g-student", email: "student@example.com", name: "Jane Doe" }));
+      const login = await request(app).post("/api/auth/google").send({ credential: fakeCredential });
+      expect(login.status).toBe(200);
+      config.studentDomains.push("college.edu");
+      try {
+        const me = await request(app).get("/api/auth/me").set("Authorization", `Bearer ${login.body.token}`);
+        expect(me.status).toBe(401);
+      } finally {
+        config.studentDomains.pop();
+      }
+      const again = await request(app).get("/api/auth/me").set("Authorization", `Bearer ${login.body.token}`);
+      expect(again.status).toBe(200);
+    });
+
     it("rejects invalid Google tokens", async () => {
       setGoogleVerifier(async () => { throw new Error("Invalid token"); });
       const response = await request(app).post("/api/auth/google").send({ credential: fakeCredential });
