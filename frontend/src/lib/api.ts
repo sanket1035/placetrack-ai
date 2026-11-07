@@ -89,6 +89,7 @@ export async function api<T>(path: string, token?: string | null, init: RequestI
     const msg = networkError?.message ?? "Cannot reach server. Check your connection.";
     throw new Error(msg);
   }
+  if (response.status === 401 && token && typeof window !== "undefined") window.dispatchEvent(new Event("placetrack:unauthorized"));
   return parseResponse<T>(response);
 }
 

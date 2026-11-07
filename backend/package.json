@@ -23,6 +23,7 @@
     "google-auth-library": "^11.3.3",
     "helmet": "^8.1.0",
     "jsonwebtoken": "^9.0.2",
+    "mammoth": "^1.13.0",
     "morgan": "^1.10.0",
     "multer": "^2.2.0",
     "node-cron": "^4.6.0",

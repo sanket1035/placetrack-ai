@@ -5,7 +5,9 @@ import { z } from "zod";
 import { prisma } from "../lib/prisma.js";
 import { audit } from "../lib/audit.js";
 import { authenticate } from "../middleware/auth.js";
-import { analyzeResumeTextSmart, generateInterviewQuestionsSmart, evaluateInterviewAnswerSmart } from "../services/ai.js";
+import mammoth from "mammoth";
+import { analyzeResumeText, generateInterviewQuestionsSmart, evaluateAnswer } from "../services/ai.js";
+import { ResumeTextError } from "../services/resumeScoring.js";
 import { predictReadiness } from "../services/readiness.js";
 
 export const aiRouter = Router();
@@ -16,78 +18,69 @@ const upload = multer({
 
 aiRouter.use(authenticate);
 
+async function saveAnalysis(userId: string, result: ReturnType<typeof analyzeResumeText>, fileName?: string) {
+  await prisma.resumeAnalysis.create({
+    data: { userId, fileName, score: result.score, skills: result.skills, sections: result.sectionHits, suggestions: result.suggestions }
+  });
+  await audit(userId, "ANALYZE", "resume", { score: result.score });
+}
+
 // 1. Text Paste Analyzer Route
 aiRouter.post("/resume/text", async (request, response) => {
-  const { text } = z.object({ text: z.string().min(20).max(100_000) }).parse(request.body);
-  const result = await analyzeResumeTextSmart(text);
-  await prisma.resumeAnalysis.create({
-    data: { userId: request.auth!.userId, score: result.score, skills: result.skills, sections: result.sectionHits, suggestions: result.suggestions }
-  });
-  await audit(request.auth!.userId, "ANALYZE", "resume", { score: result.score });
-  response.json(result);
+  const { text } = z.object({ text: z.string().min(1).max(100_000) }).parse(request.body);
+  try {
+    const result = analyzeResumeText(text);
+    await saveAnalysis(request.auth!.userId, result);
+    response.json(result);
+  } catch (error) {
+    if (error instanceof ResumeTextError) return response.status(422).json({ error: error.message });
+    throw error;
+  }
 });
 
-// 2. NEW/UPDATED: Native PDF and TXT File Upload Analyzer Route
-aiRouter.post("/resume/upload", upload.single("resume"), async (request, response) => {
-  if (!request.file) return response.status(400).json({ error: "No file uploaded" });
+// 2. PDF, DOCX and TXT upload analyzer
+async function extractResumeText(file: Express.Multer.File): Promise<string> {
+  const name = file.originalname.toLowerCase();
+  const isPdf = file.mimetype === "application/pdf" || name.endsWith(".pdf");
+  const isDocx = file.mimetype === "application/vnd.openxmlformats-officedocument.wordprocessingml.document" || name.endsWith(".docx");
+  const isTxt = file.mimetype === "text/plain" || name.endsWith(".txt");
+  if (!isPdf && !isDocx && !isTxt) throw new ResumeTextError("Unsupported file type. Upload a PDF, DOCX or TXT resume.");
+  if (file.size === 0) throw new ResumeTextError("The uploaded file is empty.");
 
-  const isPdf = request.file.mimetype === "application/pdf" || request.file.originalname.toLowerCase().endsWith(".pdf");
-  const isTxt = request.file.mimetype === "text/plain" || request.file.originalname.toLowerCase().endsWith(".txt");
-
-  if (!isPdf && !isTxt) {
-    return response.status(400).json({ error: "Only PDF or TXT files are allowed" });
-  }
-
-  let text = "";
   try {
     if (isPdf) {
-      console.log(`[ResumeUpload] Loading PDF document: ${request.file.originalname} (${request.file.size} bytes)`);
-      const pdfProxy = await getDocumentProxy(new Uint8Array(request.file.buffer));
-      console.log(`[ResumeUpload] PDF loaded successfully. Total pages: ${pdfProxy.numPages}`);
-      
-      let extractedText = "";
-      for (let i = 1; i <= pdfProxy.numPages; i++) {
-        const page = await pdfProxy.getPage(i);
-        const textContent = await page.getTextContent();
-        const pageText = textContent.items
-          .map((item: any) => item.str || "")
-          .join(" ");
-        extractedText += pageText + "\n";
+      // PDFs start with "%PDF"; anything else is a corrupted or renamed file.
+      if (file.buffer.subarray(0, 5).toString("latin1").indexOf("%PDF") === -1) throw new Error("not a PDF");
+      const pdf = await getDocumentProxy(new Uint8Array(file.buffer));
+      const pages: string[] = [];
+      for (let index = 1; index <= pdf.numPages; index++) {
+        const content = await (await pdf.getPage(index)).getTextContent();
+        pages.push(content.items.map((item: any) => item.str || "").join(" "));
       }
-      text = extractedText;
-      console.log(`[ResumeUpload] Text extraction complete. Extracted characters: ${text.length}`);
-      console.log(`[ResumeUpload] Text preview: "${text.substring(0, 150).replace(/\s+/g, " ")}"`);
-    } else {
-      text = request.file.buffer.toString("utf8");
-      console.log(`[ResumeUpload] Loaded TXT document. Characters: ${text.length}`);
+      return pages.join("\n");
     }
-  } catch (pdfError: any) {
-    console.error("[ResumeUpload] PDF parsing failed. Error details:", pdfError);
-    return response.status(422).json({ 
-      error: `Failed to parse PDF resume. Details: ${pdfError?.message || "Invalid PDF structure"}` 
-    });
+    if (isDocx) {
+      const { value } = await mammoth.extractRawText({ buffer: file.buffer });
+      return value;
+    }
+    return file.buffer.toString("utf8");
+  } catch (error) {
+    if (error instanceof ResumeTextError) throw error;
+    throw new ResumeTextError("The file could not be read. It may be corrupted or password-protected; export it again as a text-based PDF or DOCX.");
   }
+}
 
-  if (text.trim().length < 20) {
-    console.warn(`[ResumeUpload] Extracted text is too short: ${text.trim().length} chars.`);
-    return response.status(422).json({ 
-      error: `Could not extract enough text from the resume (extracted ${text.trim().length} characters). If it is a scanned image or has custom font curves, please export it with a standard Unicode text layer.` 
-    });
+aiRouter.post("/resume/upload", upload.single("resume"), async (request, response) => {
+  if (!request.file) return response.status(400).json({ error: "No file uploaded" });
+  try {
+    const text = await extractResumeText(request.file);
+    const result = analyzeResumeText(text);
+    await saveAnalysis(request.auth!.userId, result, request.file.originalname);
+    response.json({ ...result, fileName: request.file.originalname, extractedCharacters: text.length });
+  } catch (error) {
+    if (error instanceof ResumeTextError) return response.status(422).json({ error: error.message });
+    throw error;
   }
-  
-  const result = await analyzeResumeTextSmart(text);
-  await prisma.resumeAnalysis.create({
-    data: {
-      userId: request.auth!.userId, 
-      fileName: request.file.originalname, 
-      score: result.score,
-      skills: result.skills, 
-      sections: result.sectionHits, 
-      suggestions: result.suggestions
-    }
-  });
-  
-  response.json({ ...result, fileName: request.file.originalname, extractedCharacters: text.length });
 });
 
 // 3. History Retrieval Route
@@ -103,14 +96,15 @@ aiRouter.post("/interview", async (request, response) => {
   response.json(await generateInterviewQuestionsSmart(role, count));
 });
 
-// 5. Interview Answer Feedback Route
+// 5. Interview Answer Feedback Route: evaluates the content of the answer
 aiRouter.post("/interview/feedback", async (request, response) => {
-  const { question, answer, role } = z.object({
-    question: z.string().min(5),
-    answer: z.string().min(1),
-    role: z.string().default("software engineer")
+  const { question, answer, role, category } = z.object({
+    question: z.string().min(5).max(2000),
+    answer: z.string().max(10_000),
+    role: z.string().default("software engineer"),
+    category: z.string().optional()
   }).parse(request.body);
-  const result = await evaluateInterviewAnswerSmart(question, answer, role);
+  const result = await evaluateAnswer({ question, answer, role, category });
   response.json(result);
 });
 

@@ -104,7 +104,9 @@ app.use(errorHandler);
 const httpServer = createServer(app);
 initSocket(httpServer);
 
-const server = httpServer.listen(port, async () => {
+// Tests import this module from several files, so they bind an ephemeral port instead of a fixed one.
+const listenPort = process.env.NODE_ENV === "test" ? 0 : port;
+const server = httpServer.listen(listenPort, async () => {
   console.log(`PlaceTrack API running on http://localhost:${port}`);
   try {
     await prisma.$connect();

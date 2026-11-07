@@ -7,9 +7,9 @@ import {
   CircleUserRound, Command, LayoutDashboard, Loader2, LogOut, Menu,
   RotateCw, Search, X, BriefcaseBusiness, Building2, FileScan, BookOpenCheck,
   Sparkles, Gauge, Users, Target, Download, Plus, CheckCircle2, ArrowUpRight,
-  Sun, Moon, Upload, Send, CalendarDays, Trophy, Share2, Trash2
+  Sun, Moon, Upload, Send, CalendarDays, Trophy, Share2, Trash2, ChevronDown
 } from "lucide-react";
-import { api, type LoginResponse, type Role, type SessionUser } from "@/lib/api";
+import { api, ROLE_LABEL, type LoginResponse, type Role, type SessionUser } from "@/lib/api";
 import { NotificationBell } from "./NotificationBell";
 import { useNotifications } from "../hooks/useNotifications";
 import PracticeView from "./PracticeView";
@@ -85,6 +85,8 @@ function removeStorage(key: string) {
 
 export function Dashboard() {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [moreOpen, setMoreOpen] = useState(false);
+  const moreRef = useRef<HTMLDivElement>(null);
   const [view, setView] = useState<View>("Overview");
   const [notice, setNotice] = useState("");
   const [token, setToken] = useState<string | null>(null);
@@ -134,6 +136,20 @@ export function Dashboard() {
     refreshAll(token).catch((error) => flash(error.message));
   }, [token]);
 
+  // The server rejects expired tokens and deleted accounts with 401; return to the sign-in screen.
+  useEffect(() => {
+    const onUnauthorized = () => {
+      removeStorage("placetrack-token");
+      removeStorage("placetrack-user");
+      setToken(null);
+      setUser(null);
+      setDashboard(null);
+      flash("Your session has ended. Please sign in again.");
+    };
+    window.addEventListener("placetrack:unauthorized", onUnauthorized);
+    return () => window.removeEventListener("placetrack:unauthorized", onUnauthorized);
+  }, []);
+
   useEffect(() => {
     const handler = (event: MouseEvent | PointerEvent) => {
       const target = event.target as HTMLElement | null;
@@ -150,6 +166,17 @@ export function Dashboard() {
       document.removeEventListener("pointerup", handler);
     };
   }, []);
+
+  useEffect(() => {
+    if (!moreOpen) return;
+    const close = (event: PointerEvent | KeyboardEvent) => {
+      if (event instanceof KeyboardEvent) { if (event.key === "Escape") setMoreOpen(false); return; }
+      if (moreRef.current && !moreRef.current.contains(event.target as Node)) setMoreOpen(false);
+    };
+    document.addEventListener("pointerdown", close);
+    document.addEventListener("keydown", close);
+    return () => { document.removeEventListener("pointerdown", close); document.removeEventListener("keydown", close); };
+  }, [moreOpen]);
 
   const flash = (message: string) => {
     setNotice(message);
@@ -276,6 +303,20 @@ export function Dashboard() {
 
   const name = user.student?.name ?? user.name ?? user.coordinator?.department ?? (role === "ADMIN" ? "Admin Console" : user.email);
 
+  const PRIMARY_NAV_COUNT = 5;
+  const primaryNav = nav.slice(0, PRIMARY_NAV_COUNT);
+  const moreNav = nav.slice(PRIMARY_NAV_COUNT);
+  const renderNavButton = (item: View) => {
+    const Icon = navIcons[item];
+    return <button
+      type="button"
+      data-view={item}
+      className={view === item ? "active" : ""}
+      onClick={() => { setView(item); setMenuOpen(false); setMoreOpen(false); }}
+      key={item}
+    ><Icon size={18} /><span>{item}</span></button>;
+  };
+
   return (
     <main className="app light">
       <AnimatePresence>{notice && <motion.div className="toast" initial={{ y: -30, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: -30, opacity: 0 }}>{notice}</motion.div>}</AnimatePresence>
@@ -288,17 +329,21 @@ export function Dashboard() {
         </div>
         <nav>
           <p className="nav-label">Workspace</p>
-          {nav.map((item) => {
-            const Icon = navIcons[item];
-            return <button
-              type="button"
-              data-view={item}
-              className={view === item ? "active" : ""}
-              onClick={() => { setView(item); setMenuOpen(false); }}
-              onPointerUp={() => { setView(item); setMenuOpen(false); }}
-              key={item}
-            ><Icon size={18} /><span>{item}</span></button>;
-          })}
+          {primaryNav.map(renderNavButton)}
+          {moreNav.length > 0 && (
+            <div className="nav-more" ref={moreRef}>
+              <button
+                type="button"
+                className={`nav-more-trigger ${moreNav.includes(view) ? "active" : ""}`}
+                aria-haspopup="menu"
+                aria-expanded={moreOpen}
+                onClick={() => setMoreOpen((open) => !open)}
+              ><span>{moreNav.includes(view) ? view : "More"}</span><ChevronDown size={14} /></button>
+              <div className={moreOpen ? "nav-more-menu open" : "nav-more-menu"} role="menu">
+                {moreNav.map(renderNavButton)}
+              </div>
+            </div>
+          )}
         </nav>
         <div className="sidebar-bottom">
           <button onClick={logout}><LogOut size={18} /> Logout</button>
@@ -320,6 +365,7 @@ export function Dashboard() {
           <div className="header-actions">
             <button onClick={() => refreshAll()} aria-label="Refresh">{loading ? <Loader2 className="spin" size={18} /> : <RotateCw size={18} />}</button>
             <NotificationBell notifications={notifications} markAsRead={markAsRead} markAllAsRead={markAllAsRead} onNavigate={setView} />
+            <span className="role-badge" title={user.email}>{ROLE_LABEL[role]}{user.coordinator?.department ? ` · ${user.coordinator.department}` : ""}</span>
             <button className="user-button" onClick={() => setProfileOpen(true)} aria-label="Open profile"><CircleUserRound size={22} /></button>
           </div>
         </header>
@@ -330,7 +376,7 @@ export function Dashboard() {
             {view === "Applications" && <Applications role={role} token={token} applications={filteredApplications} onRefresh={() => refreshAll()} flash={flash} loading={loading} />}
             {view === "Opportunities" && <Opportunities role={role} token={token} drives={filteredDrives} onRefresh={() => refreshAll()} onNavigate={setView} flash={flash} onViewDrive={setSelectedDrive} loading={loading} filterConditions={filterConditions} setFilterConditions={setFilterConditions} allDrives={drivesWithEligibility} />}
             {view === "Resume AI" && <ResumeAI token={token} flash={flash} />}
-            {view === "Aptitude" && <Aptitude token={token} role={role} tests={filteredTests} flash={flash} />}
+            {view === "Aptitude" && <Aptitude token={token} role={role} tests={filteredTests} flash={flash} onChanged={() => refreshAll()} />}
             {view === "Interview" && <InterviewCoach token={token} flash={flash} />}
             {view === "Profile" && <ProfilePage user={user} token={token} onSaved={async () => { await refreshMe(); await refreshAll(); flash("Profile updated"); }} flash={flash} dashboard={dashboard} />}
             {view === "Drive Creator" && <DriveCreator token={token} flash={flash} onCreated={() => refreshAll()} drives={drives} />}
@@ -539,11 +585,14 @@ function ProfileModal({ user, token, onClose, onSaved, flash }: {
   flash: (message: string) => void;
 }) {
   const student = user.student;
+  // Core academic details are entered once during onboarding and then locked (a TPC can change them).
+  const locked = user.role === "STUDENT" && Boolean(student?.onboarded);
+  const lockedStyle = locked ? { opacity: 0.6, cursor: "not-allowed" } : undefined;
   const [form, setForm] = useState({
-    name: student?.name ?? "",
-    branch: student?.branch ?? "Computer Engineering",
-    cgpa: String(student?.cgpa ?? 7),
-    graduationYear: String(student?.graduationYear ?? 2027),
+    name: student?.name ?? user.name ?? "",
+    branch: student && student.branch !== "Undeclared" ? student.branch : "",
+    cgpa: student && student.cgpa > 0 ? String(student.cgpa) : "",
+    graduationYear: String(student?.graduationYear ?? new Date().getFullYear() + 1),
     backlogs: String(student?.backlogs ?? 0),
     phone: student?.phone ?? "",
     linkedinUrl: student?.linkedinUrl ?? "",
@@ -640,7 +689,11 @@ function ProfilePage({ user, token, onSaved, flash, dashboard }: {
 }) {
   return (
     <>
-      <PageTitle eyebrow="Profile" title="Keep your placement profile updated." copy="CGPA, skills, branch, graduation year, and backlogs directly affect eligibility and readiness." />
+      <PageTitle
+        eyebrow="Profile"
+        title={user.role === "STUDENT" ? "Keep your placement profile updated." : "Your account."}
+        copy={user.role === "STUDENT" ? "CGPA, skills, branch, graduation year, and backlogs directly affect eligibility and readiness." : "Your sign-in details and role. Only student accounts have a placement profile."}
+      />
       <ProfileEditor user={user} token={token} onSaved={onSaved} flash={flash} dashboard={dashboard} />
     </>
   );
@@ -656,11 +709,14 @@ function ProfileEditor({ user, token, onSaved, flash, dashboard }: {
   const student = user.student;
   const cardRef = useRef<HTMLDivElement>(null);
   const { exportCard, exporting } = useProfileExport();
+  // Core academic details are entered once during onboarding and then locked (a TPC can change them).
+  const locked = user.role === "STUDENT" && Boolean(student?.onboarded);
+  const lockedStyle = locked ? { opacity: 0.6, cursor: "not-allowed" } : undefined;
   const [form, setForm] = useState({
-    name: student?.name ?? "",
-    branch: student?.branch ?? "Computer Engineering",
-    cgpa: String(student?.cgpa ?? 7),
-    graduationYear: String(student?.graduationYear ?? 2027),
+    name: student?.name ?? user.name ?? "",
+    branch: student && student.branch !== "Undeclared" ? student.branch : "",
+    cgpa: student && student.cgpa > 0 ? String(student.cgpa) : "",
+    graduationYear: String(student?.graduationYear ?? new Date().getFullYear() + 1),
     backlogs: String(student?.backlogs ?? 0),
     phone: student?.phone ?? "",
     linkedinUrl: student?.linkedinUrl ?? "",
@@ -673,7 +729,7 @@ function ProfileEditor({ user, token, onSaved, flash, dashboard }: {
 
   const readinessScore = Math.round(
     (dashboard?.readiness as { score?: number } | undefined)?.score ??
-    (student?.cgpa ?? 7) * 8 + Math.min(selectedSkills.length * 3, 24)
+    (student?.cgpa ?? 0) * 8 + Math.min(selectedSkills.length * 3, 24)
   );
 
   const save = async () => {
@@ -683,37 +739,34 @@ function ProfileEditor({ user, token, onSaved, flash, dashboard }: {
     }
     setSaving(true);
     try {
-      if (user.role === "STUDENT") {
-        if (form.linkedinUrl && !form.linkedinUrl.startsWith("http://") && !form.linkedinUrl.startsWith("https://")) {
-          flash("LinkedIn URL must be a valid URL (starting with http:// or https://)");
-          setSaving(false);
-          return;
-        }
-
-        await api("/api/auth/profile", token, {
-          method: "PATCH",
-          body: JSON.stringify({
-            skills: selectedSkills,
-            phone: form.phone || null,
-            linkedinUrl: form.linkedinUrl || null,
-            projectsCount: Number(form.projectsCount),
-            internshipsCount: Number(form.internshipsCount)
-          })
-        });
+      if (form.linkedinUrl && !/^https?:\/\//i.test(form.linkedinUrl)) {
+        flash("LinkedIn URL must start with http:// or https://");
+        setSaving(false);
+        return;
+      }
+      const common = {
+        skills: selectedSkills,
+        phone: form.phone || null,
+        linkedinUrl: form.linkedinUrl || null,
+        projectsCount: Number(form.projectsCount) || 0,
+        internshipsCount: Number(form.internshipsCount) || 0
+      };
+      if (user.role === "STUDENT" && locked) {
+        await api("/api/auth/profile", token, { method: "PATCH", body: JSON.stringify(common) });
       } else {
+        const cgpa = Number(form.cgpa);
+        if (form.name.trim().length < 2) { flash("Enter your full name."); setSaving(false); return; }
+        if (!form.branch) { flash("Select your department."); setSaving(false); return; }
+        if (!(cgpa > 0 && cgpa <= 10)) { flash("Enter a CGPA between 0 and 10."); setSaving(false); return; }
         await api("/api/auth/me/student", token, {
           method: "PATCH",
           body: JSON.stringify({
-            name: form.name,
+            ...common,
+            name: form.name.trim(),
             branch: form.branch,
-            cgpa: Number(form.cgpa),
+            cgpa,
             graduationYear: Number(form.graduationYear),
-            skills: selectedSkills,
-            backlogs: Number(form.backlogs),
-            phone: form.phone || null,
-            linkedinUrl: form.linkedinUrl || null,
-            projectsCount: Number(form.projectsCount),
-            internshipsCount: Number(form.internshipsCount),
+            backlogs: Number(form.backlogs) || 0,
             emailEnabled: form.emailEnabled
           })
         });
@@ -727,7 +780,22 @@ function ProfileEditor({ user, token, onSaved, flash, dashboard }: {
   };
 
   if (!student) {
-    return <section className="card form-card"><EmptyState title="No student profile" copy="TPC and admin accounts use analytics and application tools instead." /></section>;
+    return (
+      <section className="card profile-page-card">
+        <div className="profile-hero">
+          <div className="avatar big">{initials(user.name ?? user.email)}</div>
+          <div>
+            <span className="card-kicker">{ROLE_LABEL[user.role]}</span>
+            <h3>{user.name ?? user.email}</h3>
+            <p>{user.email}</p>
+            {user.coordinator?.department && <p>Department: {user.coordinator.department}</p>}
+          </div>
+        </div>
+        {user.role === "STUDENT"
+          ? <p className="suggestion">Your student profile is missing. Contact your Training &amp; Placement Coordinator.</p>
+          : <p className="helper-text">This account manages placements and has no student profile. Use Applications, Drive Creator, Analytics and Export Center for your work.</p>}
+      </section>
+    );
   }
 
   return (
@@ -736,20 +804,24 @@ function ProfileEditor({ user, token, onSaved, flash, dashboard }: {
         <div className="avatar big">{initials(form.name)}</div>
         <div>
           <span className="card-kicker">Student readiness profile</span>
-          <h3>{form.name}</h3>
-          <p>{form.branch} · CGPA {form.cgpa} · {selectedSkills.length} skills</p>
+          <h3>{form.name || "Your name"}</h3>
+          <p>{user.email} · {ROLE_LABEL[user.role]}</p>
+          <p>{form.branch || "Department not set"} · {form.cgpa ? `CGPA ${form.cgpa}` : "CGPA not set"} · {selectedSkills.length} skills</p>
         </div>
       </div>
+      {!student.onboarded && <p className="suggestion">Finish your profile: select your department, enter your CGPA and graduation year, then save. These cannot be changed afterwards without your coordinator.</p>}
+      {locked && <p className="helper-text">Name, department, CGPA, graduation year and backlogs are locked after onboarding. Ask your Training &amp; Placement Coordinator to correct them.</p>}
       <div className="profile-form">
-        <label>Name<input value={form.name} disabled={user.role === "STUDENT"} style={user.role === "STUDENT" ? { opacity: 0.6, cursor: "not-allowed" } : undefined} onChange={(event) => setForm((old) => ({ ...old, name: event.target.value }))} /></label>
+        <label>Name<input value={form.name} disabled={locked} style={lockedStyle} onChange={(event) => setForm((old) => ({ ...old, name: event.target.value }))} /></label>
         <label>Branch
-          <select value={form.branch} disabled={user.role === "STUDENT"} style={user.role === "STUDENT" ? { opacity: 0.6, cursor: "not-allowed" } : undefined} onChange={(event) => setForm((old) => ({ ...old, branch: event.target.value }))}>
+          <select value={form.branch} disabled={locked} style={lockedStyle} onChange={(event) => setForm((old) => ({ ...old, branch: event.target.value }))}>
+            <option value="" disabled>Select your department</option>
             {AVAILABLE_DEPARTMENTS.map((dept) => <option key={dept} value={dept}>{dept}</option>)}
           </select>
         </label>
-        <label>CGPA<input value={form.cgpa} disabled={user.role === "STUDENT"} style={user.role === "STUDENT" ? { opacity: 0.6, cursor: "not-allowed" } : undefined} onChange={(event) => setForm((old) => ({ ...old, cgpa: event.target.value }))} /></label>
-        <label>Graduation Year<input value={form.graduationYear} disabled={user.role === "STUDENT"} style={user.role === "STUDENT" ? { opacity: 0.6, cursor: "not-allowed" } : undefined} onChange={(event) => setForm((old) => ({ ...old, graduationYear: event.target.value }))} /></label>
-        <label>Backlogs<input value={form.backlogs} disabled={user.role === "STUDENT"} style={user.role === "STUDENT" ? { opacity: 0.6, cursor: "not-allowed" } : undefined} onChange={(event) => setForm((old) => ({ ...old, backlogs: event.target.value }))} /></label>
+        <label>CGPA<input value={form.cgpa} disabled={locked} style={lockedStyle} onChange={(event) => setForm((old) => ({ ...old, cgpa: event.target.value }))} /></label>
+        <label>Graduation Year<input value={form.graduationYear} disabled={locked} style={lockedStyle} onChange={(event) => setForm((old) => ({ ...old, graduationYear: event.target.value }))} /></label>
+        <label>Backlogs<input value={form.backlogs} disabled={locked} style={lockedStyle} onChange={(event) => setForm((old) => ({ ...old, backlogs: event.target.value }))} /></label>
         <label>Phone Number<input value={form.phone} onChange={(event) => setForm((old) => ({ ...old, phone: event.target.value }))} /></label>
         <label>LinkedIn URL<input value={form.linkedinUrl} onChange={(event) => setForm((old) => ({ ...old, linkedinUrl: event.target.value }))} /></label>
         <label>Projects Count<input value={form.projectsCount} type="number" onChange={(event) => setForm((old) => ({ ...old, projectsCount: event.target.value }))} /></label>
@@ -815,8 +887,12 @@ function ResumeAI({ token, flash }: { token: string; flash: (message: string) =>
 
   // Core parsing request function to trigger the backend multipart pipeline
   const processResumeFile = async (file: File) => {
-    if (file.type !== "application/pdf" && file.type !== "text/plain") {
-      flash("Only valid PDF or TXT files are supported.");
+    if (!/\.(pdf|docx|txt)$/i.test(file.name)) {
+      flash("Only PDF, DOCX or TXT resumes are supported.");
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      flash("The file is larger than 5 MB.");
       return;
     }
 
@@ -878,7 +954,7 @@ function ResumeAI({ token, flash }: { token: string; flash: (message: string) =>
         </span>
         <h2>Upload Your Placement Profile</h2>
         <p className="section-copy" style={{ margin: "8px 0 16px", color: "var(--muted)" }}>
-          Drag and drop your structured PDF or text resume below. Our system will extract skills and score eligibility matching instantly.
+          Drop your PDF, DOCX or TXT resume below. The score is calculated from what is actually written in it: contact details, education, skills, projects, experience and measurable impact.
         </p>
 
         {/* Drag and Drop Zone UI Panel */}
@@ -900,7 +976,7 @@ function ResumeAI({ token, flash }: { token: string; flash: (message: string) =>
         >
           <input
             type="file"
-            accept=".pdf,.txt"
+            accept=".pdf,.docx,.txt"
             onChange={handleFileChange}
             style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", opacity: 0, cursor: "pointer" }}
             disabled={loading}
@@ -935,55 +1011,120 @@ function ResumeAI({ token, flash }: { token: string; flash: (message: string) =>
   );
 }
 
-function Aptitude({ token, role, tests, flash }: { token: string; role: Role; tests: TestSummary[]; flash: (message: string) => void }) {
-  const [active, setActive] = useState<Record<string, unknown> | null>(null);
+type AptitudeQuestion = { id: string; section: string; questionText: string; options: string[] };
+type AptitudeReview = { questionId: string; section: string; questionText: string; options: string[]; chosen: number | null; correctAnswer: number; isCorrect: boolean; explanation: string };
+type AptitudeResult = {
+  score: number; accuracy: number; totalQuestions: number; attempted: number; unanswered: number;
+  sectionScores: Record<string, number>; strongAreas: string[]; weakAreas: string[]; review: AptitudeReview[];
+};
+
+function Aptitude({ token, role, tests, flash, onChanged }: { token: string; role: Role; tests: TestSummary[]; flash: (message: string) => void; onChanged: () => void }) {
+  const [active, setActive] = useState<{ id: string; title: string; duration?: number; questions: AptitudeQuestion[] } | null>(null);
   const [answers, setAnswers] = useState<Record<string, number>>({});
+  const [section, setSection] = useState("All");
+  const [loadingTest, setLoadingTest] = useState(false);
+  const [loadError, setLoadError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [result, setResult] = useState<AptitudeResult | null>(null);
+  const [seeding, setSeeding] = useState(false);
+
   const openTest = async (id: string) => {
+    setLoadingTest(true);
+    setLoadError("");
+    setResult(null);
+    setSection("All");
     try {
       setActive(await api(`/api/tests/${id}`, token));
       setAnswers({});
     } catch (error) {
-      console.warn("Backend API not reachable for loading test questions. Using client-side questions.");
-      setActive({
-        id,
-        title: tests.find((t) => t.id === id)?.title ?? "Mock Test",
-        questions: [
-          { id: "q1", section: "Quantitative", questionText: "A train running at the speed of 60 km/hr crosses a pole in 9 seconds. What is the length of the train?", options: ["120 metres", "180 metres", "324 metres", "150 metres"] },
-          { id: "q2", section: "Quantitative", questionText: "The average of 20 numbers is zero. Of them, at the most, how many may be greater than zero?", options: ["0", "1", "10", "19"] },
-          { id: "q3", section: "Logical", questionText: "Look at this series: 2, 1, (1/2), (1/4), ... What number should come next?", options: ["(1/3)", "(1/8)", "(2/8)", "(1/16)"] },
-          { id: "q4", section: "Logical", questionText: "Which word does not belong with the others?", options: ["parsley", "basil", "dill", "mayonnaise"] },
-          { id: "q5", section: "Verbal", questionText: "Choose the synonym for: AMBIGUOUS", options: ["Vague", "Clear", "Certain", "Helpful"] }
-        ]
-      });
-      setAnswers({});
+      setActive(null);
+      setLoadError(error instanceof Error ? error.message : "Could not load the test questions.");
+    } finally {
+      setLoadingTest(false);
     }
   };
+
   const submit = async () => {
-    if (!active?.id) return;
+    if (!active) return;
+    const unanswered = active.questions.length - Object.keys(answers).length;
+    if (unanswered > 0 && !window.confirm(`${unanswered} question(s) are unanswered and will be marked wrong. Submit anyway?`)) return;
+    setSubmitting(true);
     try {
-      const result = await api<Record<string, unknown>>(`/api/tests/${active.id}/submit`, token, { method: "POST", body: JSON.stringify({ answers }) });
-      flash(`Submitted. Accuracy ${result.accuracy}%`);
+      const data = await api<AptitudeResult>(`/api/tests/${active.id}/submit`, token, { method: "POST", body: JSON.stringify({ answers }) });
+      setResult(data);
+      onChanged();
+      flash(`Submitted. Accuracy ${data.accuracy}%`);
     } catch (error) {
       flash(error instanceof Error ? error.message : "Could not submit the test. Try again.");
+    } finally {
+      setSubmitting(false);
     }
   };
-  const questions = (active?.questions as Array<{ id: string; section: string; questionText: string; options: string[] }> | undefined) ?? [];
+
+  const loadStarterBank = async () => {
+    setSeeding(true);
+    try {
+      const data = await api<{ created: string[] }>("/api/tests/starter-bank", token, { method: "POST" });
+      flash(data.created.length ? `Loaded ${data.created.length} starter tests.` : "Starter tests are already loaded.");
+      onChanged();
+    } catch (error) {
+      flash(error instanceof Error ? error.message : "Could not load the starter question bank.");
+    } finally {
+      setSeeding(false);
+    }
+  };
+
+  const questions = active?.questions ?? [];
+  const sections = ["All", ...Array.from(new Set(questions.map((question) => question.section)))];
+  const visible = section === "All" ? questions : questions.filter((question) => question.section === section);
+  const answeredCount = Object.keys(answers).length;
+  const reviewById = new Map((result?.review ?? []).map((item) => [item.questionId, item]));
+
   return (
     <>
-      <PageTitle eyebrow="Aptitude tests" title="Practice and submit mock tests." copy={role === "STUDENT" ? "Attempt seeded placement mocks." : "Monitor test inventory and participation."} />
+      <PageTitle eyebrow="Aptitude tests" title="Practice and submit mock tests." copy={role === "STUDENT" ? "Attempt placement mock tests and review every answer." : "Monitor test inventory and participation."} />
       <div className="split-grid">
         <section className="card list-card">
+          {tests.length === 0 && <EmptyState title="No aptitude tests yet" copy={role === "ADMIN" ? "Load the starter bank (2 mock tests, 60 questions) to get started." : "Your Training & Placement Coordinator has not published a test yet."} />}
+          {role === "ADMIN" && <button className="primary-button" onClick={loadStarterBank} disabled={seeding}>{seeding ? <Loader2 className="spin" size={16} /> : <BookOpenCheck size={16} />} Load starter question bank</button>}
           {tests.map((test) => <button className="list-row" key={test.id} onClick={() => openTest(test.id)}><BookOpenCheck size={18} /><span><strong>{test.title}</strong><small>{test.duration} min · {test._count?.questions ?? 0} questions · {test._count?.results ?? 0} attempts</small></span></button>)}
         </section>
         <section className="card test-card">
-          {!active && <EmptyState title="Pick a test" copy="Questions will load here." />}
-          {active && <>
-            <h3>{String(active.title)}</h3>
-            {questions.map((question, index) => <div className="question-card" key={question.id}>
-              <strong>{index + 1}. {question.questionText}</strong>
-              {question.options.map((option, optionIndex) => <label key={option}><input type="radio" name={question.id} onChange={() => setAnswers((old) => ({ ...old, [question.id]: optionIndex }))} /> {option}</label>)}
-            </div>)}
-            {role === "STUDENT" && <button className="primary-button" onClick={submit}><Send size={16} /> Submit test</button>}
+          {loadingTest && <EmptyState title="Loading questions" copy="Please wait." />}
+          {!loadingTest && loadError && <EmptyState title="Could not load this test" copy={loadError} />}
+          {!loadingTest && !loadError && !active && <EmptyState title="Pick a test" copy="Questions will load here." />}
+          {!loadingTest && active && <>
+            <h3>{active.title}</h3>
+            {questions.length === 0 && <EmptyState title="This test has no questions" copy="Ask your coordinator to add questions." />}
+            {questions.length > 0 && !result && <p className="section-copy">{answeredCount} of {questions.length} answered{active.duration ? ` · suggested time ${active.duration} min` : ""}</p>}
+            {result && <div className="analysis-panel">
+              <div className="analysis-score"><CheckCircle2 /><div><strong>{result.score}/{result.totalQuestions}</strong><span>{result.accuracy}% accuracy · {result.unanswered} unanswered</span></div></div>
+              <div className="score-breakdown">
+                {Object.entries(result.sectionScores).map(([name, value]) => <div className="score-row" key={name}>
+                  <div className="score-row-head"><span>{name}</span><strong>{value}%</strong></div>
+                  <div className="score-bar"><i style={{ width: `${value}%` }} /></div>
+                </div>)}
+              </div>
+              {result.strongAreas.length > 0 && <p className="suggestion success">Strong: {result.strongAreas.join(", ")}</p>}
+              {result.weakAreas.length > 0 && <p className="suggestion">Needs practice: {result.weakAreas.join(", ")}</p>}
+            </div>}
+            {questions.length > 0 && <div className="tag-list">{sections.map((name) => <button type="button" key={name} className={name === section ? "interview-tab active" : "interview-tab"} onClick={() => setSection(name)}>{name}</button>)}</div>}
+            {visible.map((question) => {
+              const index = questions.indexOf(question);
+              const review = reviewById.get(question.id);
+              return <div className="question-card" key={question.id}>
+                <strong>{index + 1}. {question.questionText}</strong>
+                {question.options.map((option, optionIndex) => {
+                  const mark = review ? (optionIndex === review.correctAnswer ? " ✓" : optionIndex === review.chosen ? " ✗" : "") : "";
+                  return <label key={`${question.id}-${optionIndex}`}>
+                    <input type="radio" name={question.id} disabled={Boolean(result)} checked={result ? review?.chosen === optionIndex : answers[question.id] === optionIndex} onChange={() => setAnswers((old) => ({ ...old, [question.id]: optionIndex }))} /> {option}{mark}
+                  </label>;
+                })}
+                {review && <p className={review.isCorrect ? "suggestion success" : "suggestion"}>{review.isCorrect ? "Correct. " : review.chosen === null ? "Not answered. " : "Incorrect. "}{review.explanation}</p>}
+              </div>;
+            })}
+            {role === "STUDENT" && questions.length > 0 && !result && <button className="primary-button" onClick={submit} disabled={submitting || answeredCount === 0}>{submitting ? <Loader2 className="spin" size={16} /> : <Send size={16} />} Submit test</button>}
+            {result && <button className="ghost-button" onClick={() => openTest(active.id)}>Retake test</button>}
           </>}
         </section>
       </div>
@@ -991,12 +1132,25 @@ function Aptitude({ token, role, tests, flash }: { token: string; role: Role; te
   );
 }
 
+type InterviewEvaluation = {
+  score: number;
+  verdict: string;
+  strengths: string[];
+  weaknesses: string[];
+  missingConcepts?: string[];
+  modelAnswer: string;
+  dimensions: Array<{ key: string; label: string; score: number }>;
+  source: "ai" | "heuristic";
+  verified: boolean;
+  note?: string;
+};
+
 function InterviewCoach({ token, flash }: { token: string; flash: (message: string) => void }) {
   const [selectedRole, setSelectedRole] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<"technical" | "soft">("technical");
   const [selectedQuestion, setSelectedQuestion] = useState<string | null>(null);
   const [answers, setAnswers] = useState<Record<string, string>>({});
-  const [evaluations, setEvaluations] = useState<Record<string, { score: number; strengths: string[]; weaknesses: string[]; modelAnswer: string }>>({});
+  const [evaluations, setEvaluations] = useState<Record<string, InterviewEvaluation>>({});
   const [submitting, setSubmitting] = useState<Record<string, boolean>>({});
 
   const softSkillsQuestions = [
@@ -1215,16 +1369,12 @@ function InterviewCoach({ token, flash }: { token: string; flash: (message: stri
     if (!answer) { flash("Please type an answer before submitting."); return; }
     setSubmitting((prev) => ({ ...prev, [questionText]: true }));
     try {
-      // Call Next.js API route directly (works on Vercel without Express backend)
-      const res = await fetch("/api/ai/interview/feedback", {
+      const response = await api<InterviewEvaluation>("/api/ai/interview/feedback", token, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ question: questionText, answer, role: selectedRole }),
+        body: JSON.stringify({ question: questionText, answer, role: selectedRole, category: activeTab === "soft" ? "Behavioral" : "Technical" }),
       });
-      if (!res.ok) throw new Error("AI evaluation failed");
-      const response = await res.json() as { score: number; strengths: string[]; weaknesses: string[]; modelAnswer: string };
       setEvaluations((prev) => ({ ...prev, [questionText]: response }));
-      flash("Answer evaluated by AI!");
+      flash(response.source === "ai" ? "Answer evaluated by AI." : "Answer evaluated.");
     } catch (error) {
       flash(error instanceof Error ? error.message : "Feedback generation failed");
     } finally {
@@ -1287,21 +1437,28 @@ function InterviewCoach({ token, flash }: { token: string; flash: (message: stri
                     {evaluation && (
                       <div className="interview-feedback-box">
                         <div className="interview-feedback-header">
-                          <strong>AI Evaluation Feedback</strong>
+                          <strong>Evaluation · {evaluation.verdict}</strong>
                           <span style={{ color: evaluation.score >= 7 ? "var(--success)" : evaluation.score >= 5 ? "var(--warning)" : "var(--error)" }}>Score: {evaluation.score}/10</span>
                         </div>
+                        <div className="score-breakdown">
+                          {evaluation.dimensions.map((dim) => <div className="score-row" key={dim.key}>
+                            <div className="score-row-head"><span>{dim.label}</span><strong>{dim.score}/10</strong></div>
+                            <div className="score-bar"><i style={{ width: `${dim.score * 10}%` }} /></div>
+                          </div>)}
+                        </div>
+                        {evaluation.note && <p className="suggestion">{evaluation.note}</p>}
                         <div className="feedback-points-list strengths">
                           <span>✅ Strengths</span>
-                          <ul>{evaluation.strengths.map((str, idx) => <li key={idx}>{str}</li>)}</ul>
+                          <ul>{evaluation.strengths.length ? evaluation.strengths.map((str, idx) => <li key={idx}>{str}</li>) : <li>No clear strengths yet.</li>}</ul>
                         </div>
                         <div className="feedback-points-list weaknesses">
                           <span>⚠️ Areas for Improvement</span>
-                          <ul>{evaluation.weaknesses.map((weak, idx) => <li key={idx}>{weak}</li>)}</ul>
+                          <ul>{evaluation.weaknesses.length ? evaluation.weaknesses.map((weak, idx) => <li key={idx}>{weak}</li>) : <li>None found.</li>}</ul>
                         </div>
-                        <div className="model-answer-section">
+                        {evaluation.modelAnswer && <div className="model-answer-section">
                           <span>💡 Model Answer Suggestion</span>
                           <p>{evaluation.modelAnswer}</p>
-                        </div>
+                        </div>}
                       </div>
                     )}
                   </div>
@@ -1354,15 +1511,33 @@ function MiniApplicationList({ rows }: { rows: Application[] }) {
   </div>)}</div>;
 }
 
+type ResumeCategory = { key: string; label: string; score: number; max: number; note: string };
+
 function AnalysisPanel({ result }: { result: Record<string, unknown> | null }) {
   if (!result) return <div className="analysis-panel"><div className="empty-analysis"><div className="scan-lines"><i /><i /><i /><i /></div><h3>Waiting for resume</h3><p>Analysis score, skills, and suggestions will appear here.</p></div></div>;
   const skills = (result.skills as string[] | undefined) ?? [];
   const suggestions = (result.suggestions as string[] | undefined) ?? [];
+  const categories = (result.categories as ResumeCategory[] | undefined) ?? [];
+  const missing = (result.missingSkills as string[] | undefined) ?? [];
+  const warnings = (result.warnings as string[] | undefined) ?? [];
   return <div className="analysis-panel">
-    <div className="analysis-score"><CheckCircle2 /><div><strong>{String(result.score ?? 0)}</strong><span>resume score</span></div></div>
-    <div className="tag-list">{skills.map((skill) => <span key={skill}>{skill}</span>)}</div>
+    <div className="analysis-score"><CheckCircle2 /><div><strong>{String(result.score ?? 0)}</strong><span>resume score{result.grade ? ` · ${String(result.grade)}` : ""}</span></div></div>
+    {warnings.map((item) => <p className="suggestion" key={item}>{item}</p>)}
+    {categories.length > 0 && <>
+      <h4>Score breakdown</h4>
+      <div className="score-breakdown">
+        {categories.map((item) => <div className="score-row" key={item.key}>
+          <div className="score-row-head"><span>{item.label}</span><strong>{item.score}/{item.max}</strong></div>
+          <div className="score-bar"><i style={{ width: `${Math.round((item.score / item.max) * 100)}%` }} /></div>
+          <small>{item.note}</small>
+        </div>)}
+      </div>
+    </>}
+    <h4>Skills found</h4>
+    <div className="tag-list">{skills.length ? skills.map((skill) => <span key={skill}>{skill}</span>) : <span>None detected</span>}</div>
+    {missing.length > 0 && <><h4>Commonly asked, not found</h4><div className="tag-list">{missing.map((skill) => <span key={skill}>{skill}</span>)}</div></>}
     <h4>Suggestions</h4>
-    {suggestions.length ? suggestions.map((item) => <p className="suggestion" key={item}>{item}</p>) : <p className="suggestion success">Looks strong. Keep tailoring it per role.</p>}
+    {suggestions.length ? suggestions.map((item) => <p className="suggestion" key={item}>{item}</p>) : <p className="suggestion success">Well structured. Keep tailoring it per role.</p>}
   </div>;
 }
 
