@@ -371,3 +371,46 @@ h1, h2, h3, h4 { font-family: var(--font-display); font-weight: 800; letter-spac
   .app .profile-form, .app .grid-form { grid-template-columns: 1fr !important; }
   .app .profile-form label, .app .profile-form input, .app .profile-form select, .app .profile-form textarea { min-width: 0; max-width: 100%; }
 }
+
+/* ── Off-Campus tracker ─────────────────────────────────────────────────────── */
+.oc-stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-bottom: 16px; }
+.oc-stat { padding: 16px 18px; display: grid; gap: 6px; align-content: start; }
+.oc-stat strong { font: 800 32px/1 var(--font-display); letter-spacing: -.03em; color: #1B3A0A; }
+.oc-due { margin: 0 0 16px; display: flex; gap: 8px; align-items: center; }
+.oc-toolbar { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin-bottom: 16px; }
+.oc-toolbar select { min-height: 44px; padding: 0 14px; border: 1px solid var(--line); border-radius: 999px; background: var(--panel); color: inherit; font: inherit; }
+.oc-list { display: grid; gap: 14px; }
+.oc-card { padding: 20px 22px; display: grid; gap: 10px; }
+.oc-card .card-head h3 { margin: 4px 0 0; overflow-wrap: anywhere; }
+.oc-status { flex: none; padding: 5px 12px; border-radius: 999px; border: 1px solid var(--line); font-size: 12px; font-weight: 700; background: var(--panel-2, #F1F0E6); color: #1B3A0A; white-space: nowrap; }
+.oc-offer { background: var(--sun); }
+.oc-interview, .oc-assessment { background: #D4F4C6; }
+.oc-rejected, .oc-withdrawn { color: #7a2e2e; background: #FBE4E1; }
+.oc-meta, .oc-notes { margin: 0; font-size: 13px; color: var(--text-dim); overflow-wrap: anywhere; }
+.oc-notes { color: var(--text); }
+.oc-timeline { list-style: none; margin: 4px 0 2px; padding: 0 0 0 16px; border-left: 2px solid var(--line); display: grid; gap: 8px; }
+.oc-timeline li { position: relative; display: grid; gap: 2px; font-size: 13px; }
+.oc-timeline li::before { content: ""; position: absolute; left: -22px; top: 5px; width: 10px; height: 10px; border-radius: 50%; background: var(--sun); border: 2px solid #1B3A0A; box-sizing: border-box; }
+.oc-timeline li span { color: var(--text-dim); overflow-wrap: anywhere; }
+.oc-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; }
+@media (max-width: 720px) { .oc-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); } .oc-card { padding: 16px; } }
+.oc-due { border: 1px solid var(--line) !important; background: #FFF8C7; border-radius: 12px; padding: 10px 14px; font-size: 13px; }
+.oc-actions a.ghost-button { text-decoration: none; }
+
+/* ── Overview: recent applications list and readiness card ──────────────────── */
+.mini-applications { display: grid; margin-top: 12px; }
+.mini-app-row { display: grid; grid-template-columns: 40px minmax(0, 1fr) auto; align-items: center; gap: 12px; padding: 12px 0; border-top: 1px solid var(--line); }
+.mini-app-row:first-child { border-top: 0; }
+.mini-app-row .company-logo { width: 38px; height: 38px; border-radius: 10px; background: var(--panel-2, #F1F0E6); color: #1B3A0A; font-size: 12px; }
+.mini-app-info { min-width: 0; }
+.mini-app-info h4 { margin: 0; font-size: 14px; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mini-app-info p { margin: 2px 0 0; font-size: 12px; color: var(--text-dim); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.status-badge-compact { padding: 4px 10px; border-radius: 999px; border: 1px solid var(--line); font: 600 11px var(--font-mono); letter-spacing: .02em; text-transform: capitalize; white-space: nowrap; background: var(--panel-2, #F1F0E6); color: #1B3A0A; }
+.status-badge-compact.selected { background: var(--sun); }
+.status-badge-compact.shortlisted, .status-badge-compact.aptitude_cleared, .status-badge-compact.technical_round, .status-badge-compact.hr_round { background: #D4F4C6; }
+.status-badge-compact.rejected { background: #FBE4E1; color: #7a2e2e; }
+.readiness-card { display: flex; flex-direction: column; }
+.readiness-card .readiness-body { flex: 1; padding-top: 8px; }
+.applications-card, .upcoming-card { padding: 20px 22px; }
+.upcoming-card { display: grid; align-content: start; gap: 14px; }
+.upcoming-card .primary-button { margin-top: 4px; width: fit-content; }
