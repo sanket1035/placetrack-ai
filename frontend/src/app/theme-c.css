@@ -180,17 +180,33 @@ h1, h2, h3, h4 { font-family: var(--font-display); font-weight: 800; letter-spac
 .app .avatar { background: var(--lilac); color: #1B3A0A; border: 1px solid var(--line); border-radius: 999px; }
 .app .scrim { background: rgba(27, 58, 10, .35); backdrop-filter: none; }
 
-/* "More" dropdown inside the pill nav */
-.app .sidebar .nav-more { position: relative; }
-.app .sidebar .nav-more-trigger { display: inline-flex; align-items: center; gap: 4px; }
-.app .sidebar .nav-more-trigger svg { display: inline; }
-.app .sidebar .nav-more-menu {
-  display: none; position: absolute; top: calc(100% + 10px); right: 0; min-width: 190px; padding: 6px;
-  flex-direction: column; gap: 2px; background: var(--bg); border: 1px solid var(--line); border-radius: 18px;
-  box-shadow: 0 12px 30px rgba(27, 58, 10, 0.14); z-index: 40;
+/* Grouped dropdown panels inside the pill nav */
+.app .sidebar .nav-group { position: relative; }
+.app .sidebar .nav-group-trigger { display: inline-flex; align-items: center; gap: 4px; }
+.app .sidebar .nav-group-trigger svg { display: inline; transition: transform .15s; }
+.app .sidebar .nav-group-trigger svg.flip { transform: rotate(180deg); }
+.app .sidebar .nav-panel {
+  display: none; position: absolute; top: calc(100% + 6px); left: 50%; transform: translateX(-50%);
+  width: max-content; min-width: 260px; max-width: 340px; padding: 8px; flex-direction: column; gap: 2px;
+  background: var(--bg); border: 1px solid var(--line); border-radius: 20px;
+  box-shadow: 3px 4px 0 var(--text); z-index: 40;
 }
-.app .sidebar .nav-more-menu.open { display: flex; }
-.app .sidebar .nav-more-menu button { width: 100%; justify-content: flex-start; }
+.app .sidebar .nav-panel::before { content: ""; position: absolute; left: 0; right: 0; top: -8px; height: 8px; }
+.app .sidebar .nav-panel.open { display: flex; }
+.app .sidebar .nav-card {
+  display: flex; align-items: flex-start; gap: 12px; width: 100%; padding: 10px 12px; border-radius: 14px;
+  text-align: left; justify-content: flex-start; background: transparent; white-space: normal;
+}
+.app .sidebar .nav-card:hover, .app .sidebar .nav-card.active { background: var(--panel-2); }
+.app .sidebar .nav-card-icon { display: grid; place-items: center; flex: 0 0 36px; height: 36px; border-radius: 50%; border: 1px solid var(--line); color: #1B3A0A; }
+.app .sidebar .nav-card-icon svg { display: block; }
+.app .sidebar .nav-card-icon.tone-mint { background: var(--mint); }
+.app .sidebar .nav-card-icon.tone-sun { background: var(--sun); }
+.app .sidebar .nav-card-icon.tone-lilac { background: var(--lilac); }
+.app .sidebar .nav-card-icon.tone-aqua { background: var(--aqua); }
+.app .sidebar .nav-card-text { display: flex; flex-direction: column; gap: 2px; }
+.app .sidebar .nav-card-text strong { font-size: 14px; font-weight: 600; color: var(--text); }
+.app .sidebar .nav-card-text small { font-size: 12px; font-weight: 400; color: var(--muted); line-height: 1.35; }
 .app .menu-button { display: none; }
 
 /* ── Tablet and mobile: pill collapses to brand + menu, drawer holds navigation ── */
@@ -204,9 +220,13 @@ h1, h2, h3, h4 { font-family: var(--font-display); font-weight: 800; letter-spac
   .app .sidebar nav button { width: 100%; padding: 11px 14px; font-size: 14px; justify-content: flex-start; }
   .app .menu-button, .app .mobile-close { display: grid; }
   .app .mobile-close { position: absolute; right: 12px; top: 12px; }
-  /* in the drawer every item is listed, so the "More" wrapper dissolves */
-  .app .sidebar .nav-more, .app .sidebar .nav-more-menu { display: contents; position: static; }
-  .app .sidebar .nav-more-trigger { display: none; }
+  /* in the drawer every item is listed, so the group wrappers dissolve */
+  .app .sidebar .nav-group, .app .sidebar .nav-panel { display: contents; position: static; transform: none; box-shadow: none; }
+  .app .sidebar .nav-panel::before { display: none; }
+  .app .sidebar .nav-group-trigger { display: none; }
+  .app .sidebar .nav-card { padding: 11px 14px; align-items: center; }
+  .app .sidebar .nav-card-icon { flex-basis: 28px; height: 28px; }
+  .app .sidebar .nav-card-text small { display: none; }
   .app .sidebar nav button svg { display: inline; }
   .app .sidebar .profile-card { display: flex; background: var(--panel-2); border-radius: 14px; margin-bottom: 8px; }
   .app .sidebar-bottom > button { width: 100%; justify-content: center; }
