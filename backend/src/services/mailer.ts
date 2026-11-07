@@ -6,30 +6,62 @@ const user = process.env.SMTP_USER;
 const pass = process.env.SMTP_PASS;
 const from = process.env.EMAIL_FROM ?? "PlaceTrack AI <no-reply@placetrack.ai>";
 
+const brevoKey = () => process.env.BREVO_API_KEY;
+const sender = () => process.env.EMAIL_FROM ?? from;
+
 const transporter = host
   ? nodemailer.createTransport({
       host,
       port,
       secure: port === 465,
       auth: user && pass ? { user, pass } : undefined,
+      // Fail in seconds, not minutes, when a host blocks outbound SMTP.
+      connectionTimeout: 10_000,
+      greetingTimeout: 10_000,
+      socketTimeout: 15_000,
     })
   : null;
+
+/** "PlaceTrack <me@x.com>" -> { name, email }. */
+export function parseSender(value: string): { name?: string; email: string } {
+  const match = value.match(/^\s*"?([^"<]*?)"?\s*<([^>]+)>\s*$/);
+  if (match) return { name: match[1].trim() || undefined, email: match[2].trim() };
+  return { email: value.trim() };
+}
+
+/**
+ * Brevo's HTTPS API. Render's free plan blocks outbound SMTP ports (25, 465, 587), but port 443 works,
+ * so this is the reliable path there. Used first when BREVO_API_KEY is set.
+ */
+async function sendWithBrevo({ to, subject, html }: { to: string; subject: string; html: string }) {
+  const response = await fetch("https://api.brevo.com/v3/smtp/email", {
+    method: "POST",
+    headers: { "api-key": brevoKey()!, "Content-Type": "application/json", Accept: "application/json" },
+    body: JSON.stringify({ sender: parseSender(sender()), to: [{ email: to }], subject, htmlContent: html }),
+    signal: AbortSignal.timeout(15_000),
+  });
+  if (!response.ok) throw new Error(`Brevo responded ${response.status}: ${(await response.text()).slice(0, 300)}`);
+}
 
 let warnedNoSmtp = false;
 
 export async function sendEmail({ to, subject, html }: { to: string; subject: string; html: string }) {
-  if (!transporter) {
-    if (!warnedNoSmtp) console.warn("[Mailer] SMTP not configured. Emails are skipped until SMTP_HOST is set.");
+  if (!brevoKey() && !transporter) {
+    if (!warnedNoSmtp) console.warn("[Mailer] Email not configured. Set BREVO_API_KEY (recommended) or SMTP_HOST. Emails are skipped.");
     warnedNoSmtp = true;
     return;
   }
   try {
-    await transporter.sendMail({
-      from,
-      to,
-      subject,
-      html,
-    });
+    if (brevoKey()) {
+      await sendWithBrevo({ to, subject, html });
+    } else {
+      await transporter!.sendMail({
+        from,
+        to,
+        subject,
+        html,
+      });
+    }
     console.log(`[Mailer] Email sent successfully to ${to}: ${subject}`);
   } catch (error) {
     console.error(`[Mailer] Failed to send email to ${to}:`, error);
