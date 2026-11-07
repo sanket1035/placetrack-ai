@@ -12,6 +12,7 @@ import { prisma } from "./lib/prisma.js";
 import { createServer } from "http";
 import { initSocket } from "./lib/socket.js";
 import { aiRouter } from "./routes/ai.routes.js";
+import { formatPackage } from "./lib/package.js";
 import { applicationsRouter } from "./routes/applications.routes.js";
 import { offCampusRouter } from "./routes/offCampus.routes.js";
 import { authRouter } from "./routes/auth.routes.js";
@@ -200,7 +201,7 @@ async function checkUpcomingDriveDeadlines() {
            <p><b>Drive Details:</b></p>
            <ul style="padding-left: 20px; line-height: 1.8;">
              <li><b>Deadline:</b> ${new Date(drive.deadline).toLocaleString()}</li>
-             <li><b>Package:</b> Rs ${drive.package} LPA</li>
+             <li><b>Package:</b> Rs ${formatPackage(drive.package, drive.packageMax)}</li>
              <li><b>Location:</b> ${drive.location}</li>
            </ul>
            <p>Don't miss out on this opportunity. Please submit your application as soon as possible.</p>`

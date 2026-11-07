@@ -1,3 +1,4 @@
+import { formatPackage } from "@/lib/package";
 import { CheckCircle2, X, ArrowUpRight, Bookmark, Share2 } from "lucide-react";
 import type { Role, Drive, View, FilterCondition } from "../types/dashboard";
 import { getCompanyBranding, getLogoUrl, initials } from "../lib/queries";
@@ -168,7 +169,7 @@ export function Opportunities({
                       color: "var(--muted)"
                     }}
                   >
-                    Rs {drive.package} LPA
+                    Rs {formatPackage(drive.package, drive.packageMax)}
                   </span>
                   <span
                     style={{

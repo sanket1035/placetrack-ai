@@ -1,5 +1,6 @@
 "use client";
 
+import { formatPackage } from "@/lib/package";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { ElementType, ReactNode } from "react";
 import { AnimatePresence, motion } from "framer-motion";
@@ -609,7 +610,7 @@ function DriveDetailsModal({ drive, role, token, onClose, onApplied, flash }: {
         <div className="drive-details-grid">
           <div className="drive-detail-section">
             <h4>Package</h4>
-            <p>Rs {drive.package} LPA</p>
+            <p>Rs {formatPackage(drive.package, drive.packageMax)}</p>
           </div>
           <div className="drive-detail-section">
             <h4>Location</h4>

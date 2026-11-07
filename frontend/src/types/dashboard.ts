@@ -27,6 +27,7 @@ export interface Drive {
   };
   role: string;
   package: number;
+  packageMax?: number | null;
   location: string;
   jobType: string;
   deadline: string;
