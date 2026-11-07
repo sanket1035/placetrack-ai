@@ -65,7 +65,7 @@ export function LoginScreen({ loading, onGoogleCredential }: {
           size: "large",
           shape: "pill",
           text: "continue_with",
-          width: 340
+          width: Math.max(200, Math.min(340, Math.floor(buttonRef.current.clientWidth || 340)))
         });
       })
       .catch((err: Error) => setError(err.message));
