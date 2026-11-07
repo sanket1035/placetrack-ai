@@ -33,16 +33,8 @@ import { Opportunities } from "./OpportunitiesView";
 import { Analytics } from "./AnalyticsView";
 import { UsersManager } from "./UsersView";
 import { DriveCreator } from "./DriveCreatorView";
+import { DEPARTMENTS as AVAILABLE_DEPARTMENTS } from "@/lib/departments";
 
-const AVAILABLE_DEPARTMENTS = [
-  "Computer Engineering",
-  "Information Technology",
-  "AI & Data Science",
-  "E&TC",
-  "Electrical",
-  "Mechanical",
-  "Civil"
-];
 
 const navIcons: Record<View, ElementType> = {
   Overview: LayoutDashboard,
@@ -1228,7 +1220,7 @@ function InterviewCoach({ token, flash }: { token: string; flash: (message: stri
       ],
       soft: softSkillsQuestions
     },
-    "AI & Data Science": {
+    "Artificial Intelligence & Data Science": {
       technical: [
         "What is the difference between supervised and unsupervised learning?",
         "Explain the bias-variance tradeoff in machine learning.",
@@ -1248,7 +1240,7 @@ function InterviewCoach({ token, flash }: { token: string; flash: (message: stri
       ],
       soft: softSkillsQuestions
     },
-    "Electronics & TC": {
+    "Electronics & Telecommunication Engineering": {
       technical: [
         "What is the difference between analog and digital modulation? Explain ASK, FSK, and PSK.",
         "Explain the operation of a PN junction diode under forward and reverse bias.",
@@ -1348,7 +1340,7 @@ function InterviewCoach({ token, flash }: { token: string; flash: (message: stri
       ],
       soft: softSkillsQuestions
     },
-    "Robotics & Automation": {
+    "Robotics & Automation Engineering": {
       technical: [
         "What is ROS (Robot Operating System)? Explain its node, topic, and service architecture.",
         "Explain forward kinematics and inverse kinematics in robotic manipulators.",
@@ -1368,23 +1360,63 @@ function InterviewCoach({ token, flash }: { token: string; flash: (message: stri
       ],
       soft: softSkillsQuestions
     },
-    "MBA / MCA": {
+    "Computer Science & Design": {
       technical: [
-        "Explain database normalization. What are 1NF, 2NF, and 3NF?",
-        "What is the difference between a stack and a queue? Give real-world application examples.",
-        "Explain the OSI model. What happens at each of the 7 layers?",
-        "What is SDLC (Software Development Life Cycle)? Compare Agile and Waterfall.",
-        "Explain ERP systems. What is SAP and how does it benefit an organisation?",
-        "What is supply chain management? Explain just-in-time (JIT) inventory.",
+        "What is the difference between UX design and UI design? Where do they overlap?",
+        "Explain the design thinking process and its five stages with a project example.",
+        "What is a design system, and how does it keep a product consistent across teams?",
+        "Explain Gestalt principles and how they influence layout decisions.",
+        "What are the WCAG accessibility guidelines? Give three ways to make an interface accessible.",
+        "How do you run a usability test? How many users are enough and how do you act on the findings?",
+        "Explain wireframes, low-fidelity and high-fidelity prototypes, and when each is useful.",
+        "What is the difference between responsive and adaptive design?",
+        "Explain the CSS Box Model, Flexbox and Grid, and when you would choose Grid.",
+        "What is information architecture and how do you validate it (card sorting, tree testing)?",
+        "Explain colour theory basics: contrast ratio, colour harmony and use of colour for hierarchy.",
+        "What is the difference between a user persona, a user journey map and an empathy map?",
+        "How do you decide between a native app, a PWA and a responsive web app for a product?",
+        "Explain how HTML, CSS and JavaScript render a page in the browser (critical rendering path).",
+        "How would you redesign a checkout flow that has a high drop-off rate? Which metrics would you track?"
+      ],
+      soft: softSkillsQuestions
+    },
+    "MBA": {
+      technical: [
         "Explain SWOT analysis and Porter's Five Forces with a real company example.",
-        "What is business intelligence? How do OLAP and OLTP systems differ?",
-        "What are decision support systems (DSS) and how do they aid management?",
-        "Explain the difference between primary market research and secondary market research.",
-        "What is cloud computing? Explain IaaS, PaaS, and SaaS with examples.",
-        "What is operations research? Explain linear programming with an example.",
-        "Explain working capital management and the cash conversion cycle.",
-        "What is the difference between a primary key and a foreign key in RDBMS?",
-        "Explain marketing analytics — what KPIs would you track for a product launch?"
+        "What is the marketing mix (4 Ps), and how would you extend it for a service business?",
+        "Explain the difference between market segmentation, targeting and positioning (STP).",
+        "What is working capital management and the cash conversion cycle?",
+        "Explain NPV and IRR. How do you decide between two projects when they disagree?",
+        "What is the difference between a balance sheet, an income statement and a cash flow statement?",
+        "Explain supply chain management and just-in-time (JIT) inventory.",
+        "What is break-even analysis and how is it calculated?",
+        "Explain the BCG matrix and how a company uses it to allocate resources.",
+        "What are the main motivation theories (Maslow, Herzberg)? How would you apply one in a team?",
+        "What is the difference between recruitment, selection and talent retention? How would you reduce attrition?",
+        "Explain customer lifetime value (CLV) and customer acquisition cost (CAC).",
+        "What are KPIs you would track for a product launch, and why?",
+        "Explain the difference between primary and secondary market research with examples.",
+        "How would you estimate the market size for a new food-delivery service in a tier-2 city?"
+      ],
+      soft: softSkillsQuestions
+    },
+    "MCA": {
+      technical: [
+        "Explain database normalization. What are 1NF, 2NF and 3NF?",
+        "What is the difference between a stack and a queue? Give real-world uses of each.",
+        "Explain the OSI model. What happens at each of the 7 layers?",
+        "What is SDLC? Compare Agile and Waterfall, and say when you would choose each.",
+        "Explain the four pillars of OOP with an example for each.",
+        "What is the difference between a process and a thread? What causes a deadlock?",
+        "Explain ACID properties and what a transaction isolation level is.",
+        "What is a REST API? How does it differ from GraphQL?",
+        "Explain the difference between SQL joins: INNER, LEFT, RIGHT and FULL.",
+        "What is cloud computing? Explain IaaS, PaaS and SaaS with examples.",
+        "Explain the time complexity of binary search, merge sort and hash table lookup.",
+        "What is the difference between a primary key, a foreign key and a unique key?",
+        "What is version control? Explain branching and merging in Git.",
+        "Explain the difference between authentication and authorization, and how JWT works.",
+        "What are design patterns? Explain Singleton and Observer with a use case."
       ],
       soft: softSkillsQuestions
     }
@@ -1413,7 +1445,7 @@ function InterviewCoach({ token, flash }: { token: string; flash: (message: stri
   if (!selectedRole) {
     return (
       <>
-        <PageTitle eyebrow="Interview coach" title="Choose a department to start practicing." copy="10 engineering & IT departments — each with 15 specific technical questions and 5 soft skills questions (numbered 16–20). Practice and get AI feedback." />
+        <PageTitle eyebrow="Interview coach" title="Choose a department to start practicing." copy="12 departments — each with 15 specific technical questions and 5 soft skills questions (numbered 16–20). Practice and get AI feedback." />
         <div className="role-card-grid">
           {Object.keys(questionBank).map((dept) => (
             <button key={dept} type="button" className="role-card-btn" onClick={() => { setSelectedRole(dept); setSelectedQuestion(null); setEvaluations({}); setAnswers({}); setActiveTab("technical"); }}>

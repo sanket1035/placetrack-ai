@@ -3,16 +3,8 @@ import { X, Loader2, CheckCircle2 } from "lucide-react";
 import type { SessionUser, Role } from "@/lib/api";
 import { api } from "@/lib/api";
 import SkillsSelector from "./SkillsSelector";
+import { DEPARTMENTS as AVAILABLE_DEPARTMENTS } from "@/lib/departments";
 
-const AVAILABLE_DEPARTMENTS = [
-  "Computer Engineering",
-  "Information Technology",
-  "AI & Data Science",
-  "E&TC",
-  "Electrical",
-  "Mechanical",
-  "Civil"
-];
 
 export default function EditUserModal({
   user,

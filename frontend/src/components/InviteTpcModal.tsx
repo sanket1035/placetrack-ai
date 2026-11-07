@@ -2,16 +2,9 @@ import { useState } from "react";
 import { X, Loader2, Send } from "lucide-react";
 import type { SessionUser } from "@/lib/api";
 import { api } from "@/lib/api";
+import { DEPARTMENTS as AVAILABLE_DEPARTMENTS } from "@/lib/departments";
+export const DEPARTMENTS = AVAILABLE_DEPARTMENTS;
 
-export const DEPARTMENTS = [
-  "Computer Engineering",
-  "Information Technology",
-  "AI & Data Science",
-  "E&TC",
-  "Electrical",
-  "Mechanical",
-  "Civil"
-];
 
 /** Admin invites a Training & Placement Coordinator (TPC) for one department. They activate by signing in with Google. */
 export default function InviteTpcModal({

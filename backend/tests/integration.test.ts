@@ -148,6 +148,20 @@ describe("PlaceTrack AI - Backend Integration Tests", () => {
       expect(response.status).toBe(403);
     });
 
+    it("also blocks existing students outside the allowed domain, and matches the domain case-insensitively", async () => {
+      config.studentDomains.push("college.edu");
+      try {
+        setGoogleVerifier(async () => ({ sub: "g-student", email: "student@example.com", name: "Jane Doe" }));
+        const blocked = await request(app).post("/api/auth/google").send({ credential: fakeCredential });
+        expect(blocked.status).toBe(403);
+        setGoogleVerifier(async () => ({ sub: "g-up", email: "Upper.Case@COLLEGE.EDU", name: "Upper" }));
+        const allowed = await request(app).post("/api/auth/google").send({ credential: fakeCredential });
+        expect(allowed.status).toBe(200);
+      } finally {
+        config.studentDomains.pop();
+      }
+    });
+
     it("rejects invalid Google tokens", async () => {
       setGoogleVerifier(async () => { throw new Error("Invalid token"); });
       const response = await request(app).post("/api/auth/google").send({ credential: fakeCredential });
