@@ -77,18 +77,18 @@ export function OffCampusView({ token, flash }: { token: string; flash: (message
   return (
     <>
       <PageTitle eyebrow="Private to you" title="Off-campus applications." copy="Keep track of jobs and internships you applied for outside the college drives. Only you can see this page: coordinators and admins cannot." />
-      <section className="stats-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(140px,1fr))", gap: 12, marginBottom: 16 }}>
-        <div className="card"><span className="card-kicker">Applied</span><h3>{counts.total}</h3></div>
-        <div className="card"><span className="card-kicker">In progress</span><h3>{counts.open}</h3></div>
-        <div className="card"><span className="card-kicker">Interviews</span><h3>{counts.interviews}</h3></div>
-        <div className="card"><span className="card-kicker">Offers</span><h3>{counts.offers}</h3></div>
+      <section className="oc-stats">
+        <div className="card oc-stat"><span className="card-kicker">Applied</span><strong>{counts.total}</strong></div>
+        <div className="card oc-stat"><span className="card-kicker">In progress</span><strong>{counts.open}</strong></div>
+        <div className="card oc-stat"><span className="card-kicker">Interviews</span><strong>{counts.interviews}</strong></div>
+        <div className="card oc-stat"><span className="card-kicker">Offers</span><strong>{counts.offers}</strong></div>
       </section>
       {due.length > 0 && (
-        <p className="suggestion" style={{ marginBottom: 16 }}>
+        <p className="suggestion oc-due">
           <CalendarClock size={14} /> Follow up with: {due.map((i) => i.company).join(", ")}. You can update the status or move the reminder date.
         </p>
       )}
-      <div style={{ display: "flex", gap: 12, marginBottom: 16, flexWrap: "wrap", alignItems: "center" }}>
+      <div className="oc-toolbar">
         <select value={filter} onChange={(e) => setFilter(e.target.value as "ALL" | Status)} aria-label="Filter by status">
           <option value="ALL">All statuses</option>
           {STATUSES.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
@@ -99,26 +99,26 @@ export function OffCampusView({ token, flash }: { token: string; flash: (message
         : error ? <p className="suggestion">{error}</p>
         : visible.length === 0 ? <EmptyState title="Nothing here yet" copy="Add a job or internship you applied for, then update it whenever the company replies." />
         : (
-          <div style={{ display: "grid", gap: 12 }}>
+          <div className="oc-list">
             {visible.map((entry) => {
               const link = safeLink(entry.link);
               return (
-                <article className="card" key={entry.id}>
+                <article className="card oc-card" key={entry.id}>
                   <div className="card-head">
                     <div>
                       <span className="card-kicker">{entry.type === "JOB" ? "Job" : "Internship"} · applied {day(entry.appliedOn)}</span>
                       <h3>{entry.company} · {entry.role}</h3>
                     </div>
-                    <strong>{label(entry.status)}</strong>
+                    <span className={`oc-status oc-${entry.status.toLowerCase()}`}>{label(entry.status)}</span>
                   </div>
-                  <p className="helper-text">
+                  <p className="oc-meta">
                     {[entry.location, entry.compensation, entry.followUpOn ? `Follow up ${day(entry.followUpOn)}` : ""].filter(Boolean).join(" · ")}
                   </p>
-                  {entry.notes && <p className="section-copy">{entry.notes}</p>}
-                  <ol style={{ margin: "12px 0", paddingLeft: 18 }}>
-                    {entry.timeline.map((step, index) => <li key={index}><b>{label(step.status)}</b> · {day(step.at)} · {step.note}</li>)}
+                  {entry.notes && <p className="oc-notes">{entry.notes}</p>}
+                  <ol className="oc-timeline">
+                    {entry.timeline.map((step, index) => <li key={index}><b>{label(step.status)}</b><span>{day(step.at)} · {step.note}</span></li>)}
                   </ol>
-                  <div className="inline-actions">
+                  <div className="inline-actions oc-actions">
                     <button className="primary-button" onClick={() => setUpdating(entry)}>Company replied</button>
                     <button className="ghost-button" onClick={() => setEditing(entry)}><Pencil size={14} /> Edit</button>
                     {link && <a className="ghost-button" href={link} target="_blank" rel="noopener noreferrer"><ExternalLink size={14} /> Open link</a>}
