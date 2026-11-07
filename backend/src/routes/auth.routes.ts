@@ -24,8 +24,9 @@ export const authRouter = Router();
  * Google sign-in is the only way to authenticate.
  *  - existing user (invited TPC, pre-registered student, admin): linked by verified email
  *  - ADMIN_EMAILS: becomes ADMIN on first sign-in
- *  - ALLOWED_STUDENT_EMAIL_DOMAINS: self-registers as STUDENT (profile completed in onboarding)
- *  - anyone else: rejected. TPCs can only be invited by an admin.
+ *  - any other verified Google email self-registers as STUDENT (profile completed in onboarding);
+ *    set ALLOWED_STUDENT_EMAIL_DOMAINS to optionally restrict this to specific domains
+ *  - TPCs can only be invited by an admin.
  */
 authRouter.post("/google", loginLimiter, async (request, response) => {
   const { credential } = z.object({ credential: z.string().min(20) }).parse(request.body);
@@ -52,7 +53,7 @@ authRouter.post("/google", loginLimiter, async (request, response) => {
         data: { email: profile.email, name: profile.name, avatarUrl: profile.picture, googleId: profile.sub, role: "ADMIN" },
         include: { student: true, coordinator: true }
       });
-    } else if (config.studentDomains.includes(domain)) {
+    } else if (config.studentDomains.length === 0 || config.studentDomains.includes(domain)) {
       user = await prisma.user.create({
         data: {
           email: profile.email,
@@ -68,7 +69,7 @@ authRouter.post("/google", loginLimiter, async (request, response) => {
       });
     } else {
       return response.status(403).json({
-        error: "This email is not registered for PlaceTrack. Use your college email, or ask your Training & Placement Coordinator."
+        error: "This email domain is not allowed to sign up. Use an allowed email, or ask your Training & Placement Coordinator."
       });
     }
     await audit(user.id, "SIGNUP", "auth");

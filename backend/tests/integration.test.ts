@@ -116,12 +116,6 @@ describe("PlaceTrack AI - Backend Integration Tests", () => {
     const fakeCredential = "x".repeat(40);
     afterEach(() => setGoogleVerifier(null));
 
-    it("rejects an unregistered email outside the allowed student domains", async () => {
-      setGoogleVerifier(async () => ({ sub: "g-1", email: "stranger@gmail.com", name: "Stranger" }));
-      const response = await request(app).post("/api/auth/google").send({ credential: fakeCredential });
-      expect(response.status).toBe(403);
-    });
-
     it("signs in an existing user by verified email and links the Google account", async () => {
       setGoogleVerifier(async () => ({ sub: "g-student", email: "student@example.com", name: "Jane Doe" }));
       const response = await request(app).post("/api/auth/google").send({ credential: fakeCredential });
@@ -138,14 +132,20 @@ describe("PlaceTrack AI - Backend Integration Tests", () => {
       expect(response.status).toBe(403);
     });
 
-    it("self-registers a student from an allowed college domain", async () => {
-      config.studentDomains.push("college.edu");
-      setGoogleVerifier(async () => ({ sub: "g-new", email: "new.student@college.edu", name: "New Student" }));
+    it("self-registers a student from any verified Gmail when no domain list is set", async () => {
+      setGoogleVerifier(async () => ({ sub: "g-new", email: "new.student@gmail.com", name: "New Student" }));
       const response = await request(app).post("/api/auth/google").send({ credential: fakeCredential });
-      config.studentDomains.pop();
       expect(response.status).toBe(200);
       expect(response.body.user.role).toBe("STUDENT");
       expect(response.body.user.student.onboarded).toBe(false);
+    });
+
+    it("rejects other domains when a domain allow-list is configured", async () => {
+      config.studentDomains.push("college.edu");
+      setGoogleVerifier(async () => ({ sub: "g-x", email: "x@gmail.com", name: "X" }));
+      const response = await request(app).post("/api/auth/google").send({ credential: fakeCredential });
+      config.studentDomains.pop();
+      expect(response.status).toBe(403);
     });
 
     it("rejects invalid Google tokens", async () => {

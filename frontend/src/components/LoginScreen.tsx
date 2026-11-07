@@ -87,7 +87,7 @@ export function LoginScreen({ loading, onGoogleCredential }: {
 
         <section className="auth-card">
           <h2>Sign in</h2>
-          <p className="auth-sub">Use your college email.</p>
+          <p className="auth-sub">Sign in with your Google account.</p>
 
           {CLIENT_ID ? (
             <div className="auth-google" ref={buttonRef} aria-busy={loading} />
