@@ -41,6 +41,7 @@ export interface Drive {
     applications: number;
   };
   description?: string;
+  applyUrl?: string | null;
   maxBacklogs?: number;
 }
 

@@ -18,12 +18,16 @@ export function DriveCreator({
   drives?: Drive[];
 }) {
   const [form, setForm] = useState({
-    company: "Cognizant",
-    role: "Graduate Trainee",
-    package: "2.9",
-    location: "Pune",
-    minCgpa: "6.5",
-    deadline: new Date(Date.now() + 14 * 86_400_000).toISOString().slice(0, 10)
+    company: "",
+    role: "",
+    package: "",
+    location: "",
+    minCgpa: "6.0",
+    maxBacklogs: "0",
+    graduationYear: String(new Date().getFullYear() + 1),
+    description: "",
+    applyUrl: "",
+    deadline: ""
   });
   const [allowedBranches, setAllowedBranches] = useState<string[]>(["Computer Engineering", "Information Technology"]);
   const [logoFile, setLogoFile] = useState<File | null>(null);
@@ -52,21 +56,30 @@ export function DriveCreator({
   };
 
   const create = async () => {
+    const pkg = Number(form.package);
+    if (form.company.trim().length < 2 || form.role.trim().length < 2) { flash("Enter the company name and the role."); return; }
+    if (!(pkg > 0)) { flash("Enter the package in LPA."); return; }
+    if (form.location.trim().length < 2) { flash("Enter the job location."); return; }
+    if (form.description.trim().length < 10) { flash("Paste the job description or the placement-cell mail (at least 10 characters)."); return; }
+    if (!form.deadline) { flash("Choose the last date and time to apply."); return; }
+    if (form.applyUrl && !/^https?:\/\//i.test(form.applyUrl.trim())) { flash("The application link must start with http:// or https://"); return; }
+    if (allowedBranches.length === 0) { flash("Select at least one eligible branch."); return; }
     try {
       const drive = await api<any>("/api/drives", token, {
         method: "POST",
         body: JSON.stringify({
-          company: { name: form.company, description: `${form.company} campus hiring partner.` },
-          role: form.role,
-          package: Number(form.package),
-          location: form.location,
+          company: { name: form.company.trim(), description: `${form.company.trim()} campus hiring partner.` },
+          role: form.role.trim(),
+          package: pkg,
+          location: form.location.trim(),
           jobType: "Full-time",
-          description: "Campus hiring drive created from the TPC dashboard.",
+          description: form.description.trim(),
           minCgpa: Number(form.minCgpa),
           allowedBranches: allowedBranches,
-          maxBacklogs: 1,
-          graduationYear: 2027,
-          deadline: form.deadline,
+          maxBacklogs: Number(form.maxBacklogs) || 0,
+          graduationYear: Number(form.graduationYear),
+          deadline: new Date(form.deadline).toISOString(),
+          ...(form.applyUrl.trim() ? { applyUrl: form.applyUrl.trim() } : {}),
           status: "OPEN"
         })
       });
@@ -80,7 +93,8 @@ export function DriveCreator({
         });
       }
 
-      flash("Drive created");
+      flash("Drive created. Eligible students are being notified by email.");
+      setForm((old) => ({ ...old, company: "", role: "", package: "", location: "", description: "", applyUrl: "", deadline: "" }));
       onCreated();
     } catch (error) {
       flash(error instanceof Error ? error.message : "Drive creation failed");
@@ -108,7 +122,7 @@ export function DriveCreator({
       <PageTitle
         eyebrow="Training & Placement tools"
         title="Create a new placement drive."
-        copy="This posts directly to the backend and appears for eligible students."
+        copy="Students apply through the college form. Add its link here: eligible students get an email, and confirm in PlaceTrack once they have applied."
       />
       <section className="card form-card">
         <div className="grid-form">
@@ -117,7 +131,15 @@ export function DriveCreator({
           <label>Package (LPA)<input value={form.package} onChange={(e) => setForm(old => ({ ...old, package: e.target.value }))} /></label>
           <label>Location<input value={form.location} onChange={(e) => setForm(old => ({ ...old, location: e.target.value }))} /></label>
           <label>Min CGPA<input value={form.minCgpa} onChange={(e) => setForm(old => ({ ...old, minCgpa: e.target.value }))} /></label>
-          <label>Deadline<input value={form.deadline} type="date" onChange={(e) => setForm(old => ({ ...old, deadline: e.target.value }))} /></label>
+          <label>Max backlogs<input type="number" min="0" max="10" value={form.maxBacklogs} onChange={(e) => setForm(old => ({ ...old, maxBacklogs: e.target.value }))} /></label>
+          <label>Graduation year<input type="number" min="2024" max="2035" value={form.graduationYear} onChange={(e) => setForm(old => ({ ...old, graduationYear: e.target.value }))} /></label>
+          <label>Apply before (date and time)<input value={form.deadline} type="datetime-local" onChange={(e) => setForm(old => ({ ...old, deadline: e.target.value }))} /></label>
+          <label style={{ gridColumn: "1 / -1" }}>Application link (college Google Form)
+            <input type="url" placeholder="https://docs.google.com/forms/..." value={form.applyUrl} onChange={(e) => setForm(old => ({ ...old, applyUrl: e.target.value }))} />
+          </label>
+          <label style={{ gridColumn: "1 / -1" }}>Job description / placement-cell mail
+            <textarea rows={6} placeholder="Paste the JD or the mail sent to students" value={form.description} onChange={(e) => setForm(old => ({ ...old, description: e.target.value }))} />
+          </label>
           <label>
             Company Logo (JPEG/PNG, Max 2MB)
             <input
@@ -197,7 +219,7 @@ export function DriveCreator({
                 <div>
                   <strong style={{ fontSize: "14px", display: "block" }}>{d.company.name} — {d.role}</strong>
                   <span style={{ fontSize: "12px", color: "var(--muted)" }}>
-                    ₹{d.package} LPA · {d.location} · Deadline: {new Date(d.deadline).toLocaleDateString()}
+                    ₹{d.package} LPA · {d.location} · Deadline: {new Date(d.deadline).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" })}
                   </span>
                 </div>
                 <button

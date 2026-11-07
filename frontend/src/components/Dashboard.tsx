@@ -441,6 +441,11 @@ export function Dashboard() {
   );
 }
 
+/** Only http(s) links are ever rendered as a clickable address. */
+function safeApplyUrl(value?: string | null) {
+  return value && /^https?:\/\//i.test(value) ? value : null;
+}
+
 function DriveDetailsModal({ drive, role, token, onClose, onApplied, flash }: {
   drive: Drive;
   role: Role;
@@ -457,7 +462,7 @@ function DriveDetailsModal({ drive, role, token, onClose, onApplied, flash }: {
     setApplyError(null);
     try {
       await api("/api/applications", token, { method: "POST", body: JSON.stringify({ driveId: drive.id }) });
-      flash("Application submitted successfully!");
+      flash("Marked as applied. Your coordinator can now track it.");
       onApplied();
     } catch (error: any) {
       const reasons = error?.reasons ?? (Array.isArray(error?.data?.reasons) ? error.data.reasons : undefined);
@@ -575,7 +580,7 @@ function DriveDetailsModal({ drive, role, token, onClose, onApplied, flash }: {
           </div>
           <div className="drive-detail-section">
             <h4>Deadline</h4>
-            <p>{new Date(drive.deadline).toLocaleDateString()}</p>
+            <p>{new Date(drive.deadline).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" })}</p>
           </div>
           <div className="drive-detail-section">
             <h4>Job Type</h4>
@@ -596,14 +601,26 @@ function DriveDetailsModal({ drive, role, token, onClose, onApplied, flash }: {
               Already applied <CheckCircle2 size={15} />
             </button>
           ) : role === "STUDENT" ? (
-            <button
-              className="primary-button"
-              disabled={!isEligible || applying}
-              onClick={apply}
-              style={{ width: "100%", padding: "12px" }}
-            >
-              {applying ? <Loader2 className="spin" size={16} /> : <ArrowUpRight size={16} />} Apply Now
-            </button>
+            <>
+              <p className="helper-text" style={{ margin: 0 }}>
+                PlaceTrack only tracks applications. Apply through the college form first, then confirm below.
+              </p>
+              {safeApplyUrl(drive.applyUrl) ? (
+                <a className="primary-button" href={safeApplyUrl(drive.applyUrl)!} target="_blank" rel="noopener noreferrer" style={{ width: "100%", padding: "12px", textAlign: "center", textDecoration: "none", boxSizing: "border-box" }}>
+                  <ArrowUpRight size={16} /> Open application form
+                </a>
+              ) : (
+                <p className="suggestion" style={{ margin: 0 }}>No form link was added for this drive. Use the link in the placement cell's mail.</p>
+              )}
+              <button
+                className="secondary-button"
+                disabled={!isEligible || applying}
+                onClick={apply}
+                style={{ width: "100%", padding: "12px" }}
+              >
+                {applying ? <Loader2 className="spin" size={16} /> : <CheckCircle2 size={16} />} I have applied
+              </button>
+            </>
           ) : (
             <div style={{ display: "flex", width: "100%", justifyContent: "space-between", alignItems: "center", gap: "12px" }}>
               <p className="helper-text" style={{ margin: 0 }}>TPC / admin accounts can monitor or manage this drive.</p>

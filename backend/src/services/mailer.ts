@@ -15,9 +15,12 @@ const transporter = host
     })
   : null;
 
+let warnedNoSmtp = false;
+
 export async function sendEmail({ to, subject, html }: { to: string; subject: string; html: string }) {
   if (!transporter) {
-    console.warn("[Mailer] SMTP not configured. Skipping email sending.");
+    if (!warnedNoSmtp) console.warn("[Mailer] SMTP not configured. Emails are skipped until SMTP_HOST is set.");
+    warnedNoSmtp = true;
     return;
   }
   try {

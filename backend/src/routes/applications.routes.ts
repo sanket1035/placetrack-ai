@@ -67,15 +67,17 @@ applicationsRouter.post("/", authorize(UserRole.STUDENT), async (request, respon
   const student = await prisma.student.findUnique({ where: { userId: request.auth!.userId } });
   const drive = await prisma.placementDrive.findUnique({ where: { id: driveId } });
   if (!student || !drive) return response.status(404).json({ error: "Student or drive not found" });
+  const existing = await prisma.application.findUnique({ where: { studentId_driveId: { studentId: student.id, driveId } } });
+  if (existing) return response.status(409).json({ error: "You have already marked this drive as applied." });
   const eligibility = checkEligibility(student, drive);
   if (!eligibility.eligible) return response.status(422).json({ error: "Not eligible", reasons: eligibility.reasons });
-  const timeline = [{ status: ApplicationStatus.APPLIED, at: new Date().toISOString(), note: "Application submitted" }];
+  const timeline = [{ status: ApplicationStatus.APPLIED, at: new Date().toISOString(), note: "Student confirmed applying through the placement form" }];
   const application = await prisma.application.create({
     data: { studentId: student.id, driveId, timeline },
     include: { drive: { include: { company: true } } }
   });
   await Promise.all([
-    prisma.notification.create({ data: { userId: request.auth!.userId, title: "Application submitted", message: `${application.drive.company.name} · ${application.drive.role}` } }),
+    prisma.notification.create({ data: { userId: request.auth!.userId, title: "Application tracked", message: `${application.drive.company.name} · ${application.drive.role}` } }),
     audit(request.auth!.userId, "CREATE", "application", { applicationId: application.id, driveId })
   ]);
   response.status(201).json(application);
