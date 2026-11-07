@@ -767,7 +767,7 @@ function ProfileModal({ user, token, onClose, onSaved, flash }: {
             <label>LinkedIn URL<input value={form.linkedinUrl} onChange={(event) => setForm((old) => ({ ...old, linkedinUrl: event.target.value }))} /></label>
             <label>Projects Count<input value={form.projectsCount} type="number" onChange={(event) => setForm((old) => ({ ...old, projectsCount: event.target.value }))} /></label>
             <label>Internships Count<input value={form.internshipsCount} type="number" onChange={(event) => setForm((old) => ({ ...old, internshipsCount: event.target.value }))} /></label>
-            <label style={{ flexDirection: "row", alignItems: "center", gap: "10px", gridColumn: "span 2", cursor: "pointer", textTransform: "none", letterSpacing: "normal", fontSize: "13px", color: "var(--text)", fontWeight: 500 }}>
+            <label style={{ flexDirection: "row", alignItems: "center", gap: "10px", gridColumn: "1 / -1", cursor: "pointer", textTransform: "none", letterSpacing: "normal", fontSize: "13px", color: "var(--text)", fontWeight: 500 }}>
               <input
                 type="checkbox"
                 checked={form.emailEnabled}
@@ -934,7 +934,7 @@ function ProfileEditor({ user, token, onSaved, flash, dashboard }: {
         <label>LinkedIn URL<input value={form.linkedinUrl} onChange={(event) => setForm((old) => ({ ...old, linkedinUrl: event.target.value }))} /></label>
         <label>Projects Count<input value={form.projectsCount} type="number" onChange={(event) => setForm((old) => ({ ...old, projectsCount: event.target.value }))} /></label>
         <label>Internships Count<input value={form.internshipsCount} type="number" onChange={(event) => setForm((old) => ({ ...old, internshipsCount: event.target.value }))} /></label>
-        <label style={{ flexDirection: "row", alignItems: "center", gap: "10px", gridColumn: "span 2", cursor: "pointer", textTransform: "none", letterSpacing: "normal", fontSize: "13px", color: "var(--text)", fontWeight: 500 }}>
+        <label style={{ flexDirection: "row", alignItems: "center", gap: "10px", gridColumn: "1 / -1", cursor: "pointer", textTransform: "none", letterSpacing: "normal", fontSize: "13px", color: "var(--text)", fontWeight: 500 }}>
           <input
             type="checkbox"
             checked={form.emailEnabled}
