@@ -4,12 +4,12 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import type { ElementType, ReactNode } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import {
-  CircleUserRound, Command, LayoutDashboard, Loader2, LogOut, Menu,
+  CircleUserRound, LayoutDashboard, Loader2, LogOut, Menu,
   RotateCw, Search, X, BriefcaseBusiness, Building2, FileScan, BookOpenCheck,
   Sparkles, Gauge, Users, Target, Download, Plus, CheckCircle2, ArrowUpRight,
   Sun, Moon, Upload, Send, CalendarDays, Trophy, Share2, Trash2, ChevronDown, ClipboardList
 } from "lucide-react";
-import { api, ROLE_LABEL, type LoginResponse, type Role, type SessionUser } from "@/lib/api";
+import { api, ApiError, ROLE_LABEL, type LoginResponse, type Role, type SessionUser } from "@/lib/api";
 import { NotificationBell } from "./NotificationBell";
 import { useNotifications } from "../hooks/useNotifications";
 import PracticeView from "./PracticeView";
@@ -80,6 +80,18 @@ const NAV_META: Record<View, { blurb: string; tone: string }> = {
   Profile: { blurb: "Your details and account.", tone: "mint" },
 };
 
+/** Top-left brand: KKWagh society logo beside the PlaceTrack wordmark. */
+function BrandLogo() {
+  return (
+    <div className="brand brand-logo">
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src="/brand/kkw-society.png" alt="Karmaveer Kakasaheb Wagh Education Society" className="brand-society" width={68} height={40} />
+      <span className="brand-divider" aria-hidden="true" />
+      <span className="brand-word">Place<mark>Track</mark></span>
+    </div>
+  );
+}
+
 function readStorage(key: string) {
   try {
     return typeof window !== "undefined" ? window.localStorage.getItem(key) : null;
@@ -112,6 +124,8 @@ export function Dashboard() {
   const [notice, setNotice] = useState("");
   const [token, setToken] = useState<string | null>(null);
   const [user, setUser] = useState<SessionUser | null>(null);
+  // True until we know whether a saved session exists, so a refresh never flashes the sign-in screen.
+  const [restoring, setRestoring] = useState(true);
   const [dashboard, setDashboard] = useState<DashboardData | null>(null);
   const [drives, setDrives] = useState<Drive[]>([]);
   const [applications, setApplications] = useState<Application[]>([]);
@@ -139,18 +153,36 @@ export function Dashboard() {
 
   useEffect(() => {
     const savedToken = readStorage("placetrack-token");
-    if (savedToken) {
-      api<SessionUser>("/api/auth/me", savedToken)
-        .then((freshUser) => {
-          setToken(savedToken);
-          setUser(freshUser);
-          writeStorage("placetrack-user", JSON.stringify(freshUser));
-        })
-        .catch(() => {
+    if (!savedToken) {
+      setRestoring(false);
+      return;
+    }
+    // Show the saved session immediately; the server check below only corrects it or signs out on 401.
+    let storedUser: SessionUser | null = null;
+    try {
+      storedUser = JSON.parse(readStorage("placetrack-user") || "null");
+    } catch {
+      storedUser = null;
+    }
+    if (storedUser && storedUser.role) {
+      setToken(savedToken);
+      setUser(storedUser);
+      setRestoring(false);
+    }
+    api<SessionUser>("/api/auth/me", savedToken)
+      .then((freshUser) => {
+        setToken(savedToken);
+        setUser(freshUser);
+        writeStorage("placetrack-user", JSON.stringify(freshUser));
+      })
+      .catch((error) => {
+        // Only an explicit 401 ends the session (handled by the unauthorized listener). A slow or sleeping server must not log the user out.
+        if (error instanceof ApiError && error.status === 401) {
           removeStorage("placetrack-token");
           removeStorage("placetrack-user");
-        });
-    }
+        }
+      })
+      .finally(() => setRestoring(false));
   }, []);
 
   useEffect(() => {
@@ -319,6 +351,14 @@ export function Dashboard() {
     );
   }, [tests, searchQuery]);
 
+  if (restoring && (!user || !token)) {
+    return (
+      <main className="app light login-app" aria-busy="true">
+        <div className="auth-shell"><section className="auth-card"><p className="auth-sub"><Loader2 className="spin" size={16} /> Opening your workspace...</p></section></div>
+      </main>
+    );
+  }
+
   if (!user || !token) {
     return <LoginScreen loading={loading} onGoogleCredential={handleGoogleCredential} />;
   }
@@ -331,7 +371,7 @@ export function Dashboard() {
         <AnimatePresence>{notice && <motion.div className="toast" initial={{ y: -30, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: -30, opacity: 0 }}>{notice}</motion.div>}</AnimatePresence>
         <section className="workspace" style={{ maxWidth: 960, margin: "0 auto", padding: "24px 16px 60px" }}>
           <header style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-            <div className="brand"><div className="brand-mark"><Command size={20} /></div><span>PlaceTrack <b>AI</b></span></div>
+            <BrandLogo />
             <button className="secondary-button" onClick={logout}><LogOut size={16} /> Logout</button>
           </header>
           <PageTitle eyebrow="Welcome" title="Complete your profile to continue." copy="Choose your department and enter your CGPA and graduation year. You can change these later only through your Training & Placement Coordinator." />
@@ -351,7 +391,7 @@ export function Dashboard() {
       <AnimatePresence>{notice && <motion.div className="toast" initial={{ y: -30, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: -30, opacity: 0 }}>{notice}</motion.div>}</AnimatePresence>
       <aside className={menuOpen ? "sidebar open" : "sidebar"}>
         <button className="mobile-close" onClick={() => setMenuOpen(false)}><X /></button>
-        <div className="brand"><div className="brand-mark"><Command size={20} /></div><span>PlaceTrack <b>AI</b></span></div>
+        <BrandLogo />
         <div className="profile-card">
           <div className="avatar">{initials(name)}</div>
           <div><strong>{name}</strong><span>{role} {user.student ? `· ${user.student.branch}` : ""}</span></div>

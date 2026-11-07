@@ -4,7 +4,8 @@ import "./theme-c.css";
 
 export const metadata: Metadata = {
   title: "PlaceTrack AI — Placement readiness, made visible",
-  description: "AI-powered placement management and student readiness platform."
+  description: "AI-powered placement management and student readiness platform.",
+  icons: { icon: "/icon.svg" }
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
