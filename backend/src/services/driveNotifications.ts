@@ -3,11 +3,12 @@ import { prisma } from "../lib/prisma.js";
 import { emitToUser } from "../lib/socket.js";
 import { checkEligibility } from "./eligibility.js";
 import { sendEmail, getEmailTemplate } from "./mailer.js";
+import { formatPackage } from "../lib/package.js";
 
 /** Swappable in tests so no real SMTP connection is needed. */
 export const driveMail = { send: sendEmail };
 
-const escapeHtml = (value: string) =>
+export const escapeHtml = (value: string) =>
   value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 
 export function formatDeadline(date: Date) {
@@ -28,7 +29,7 @@ export function buildDriveEmail(drive: PlacementDrive & { company: Company }) {
   const body = `
     <p>${company} is hiring for <strong>${role}</strong> and your profile is eligible.</p>
     <table style="font-size:14px;">
-      ${row("Package", `${drive.package} LPA`)}
+      ${row("Package (CTC)", formatPackage(drive.package, drive.packageMax))}
       ${row("Location", escapeHtml(drive.location))}
       ${row("Eligible branches", escapeHtml(drive.allowedBranches.join(", ")))}
       ${row("Apply before", formatDeadline(drive.deadline))}

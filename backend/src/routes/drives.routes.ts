@@ -115,6 +115,7 @@ const driveSchema = z.object({
   company: z.object({ name: z.string().min(2), website: z.string().url().optional(), description: z.string().optional() }),
   role: z.string().min(2),
   package: z.number().positive(),
+  packageMax: z.number().positive().optional(),
   location: z.string().min(2),
   jobType: z.string().default("Full-time"),
   description: z.string().min(10),
@@ -131,6 +132,9 @@ const driveSchema = z.object({
 
 drivesRouter.post("/", authorize(UserRole.TPC, UserRole.ADMIN), async (request, response) => {
   const input = driveSchema.parse(request.body);
+  if (input.packageMax != null && input.packageMax < input.package) {
+    return response.status(400).json({ error: "Maximum package cannot be lower than the minimum package." });
+  }
   const { company, ...driveInput } = input;
   // A TPC can only open drives for their own department.
   if (request.scope!.department) driveInput.allowedBranches = [request.scope!.department];
@@ -161,6 +165,7 @@ const patchDriveSchema = z.object({
   company: z.object({ name: z.string().min(2), website: z.string().url().optional(), description: z.string().optional() }).optional(),
   role: z.string().min(2).optional(),
   package: z.number().positive().optional(),
+  packageMax: z.number().positive().nullable().optional(),
   location: z.string().min(2).optional(),
   jobType: z.string().optional(),
   description: z.string().min(10).optional(),
@@ -186,6 +191,11 @@ drivesRouter.patch("/:id", authorize(UserRole.TPC, UserRole.ADMIN), async (reque
   }
 
   const input = patchDriveSchema.parse(request.body);
+  const nextMin = input.package ?? existingDrive.package;
+  const nextMax = input.packageMax !== undefined ? input.packageMax : existingDrive.packageMax;
+  if (nextMax != null && nextMax < nextMin) {
+    return response.status(400).json({ error: "Maximum package cannot be lower than the minimum package." });
+  }
   const { company, ...driveInput } = input;
   if (request.scope!.department && driveInput.allowedBranches) driveInput.allowedBranches = [request.scope!.department];
 

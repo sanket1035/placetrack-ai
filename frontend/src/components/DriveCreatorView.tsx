@@ -1,3 +1,4 @@
+import { formatPackage } from "@/lib/package";
 import { useState } from "react";
 import { Plus, Trash2, Loader2 } from "lucide-react";
 import { api } from "@/lib/api";
@@ -21,6 +22,7 @@ export function DriveCreator({
     company: "",
     role: "",
     package: "",
+    packageMax: "",
     location: "",
     minCgpa: "6.0",
     maxBacklogs: "0",
@@ -57,8 +59,10 @@ export function DriveCreator({
 
   const create = async () => {
     const pkg = Number(form.package);
+    const pkgMax = form.packageMax.trim() ? Number(form.packageMax) : null;
     if (form.company.trim().length < 2 || form.role.trim().length < 2) { flash("Enter the company name and the role."); return; }
     if (!(pkg > 0)) { flash("Enter the package in LPA."); return; }
+    if (pkgMax !== null && !(pkgMax >= pkg)) { flash("Maximum package must be equal to or higher than the minimum."); return; }
     if (form.location.trim().length < 2) { flash("Enter the job location."); return; }
     if (form.description.trim().length < 10) { flash("Paste the job description or the placement-cell mail (at least 10 characters)."); return; }
     if (!form.deadline) { flash("Choose the last date and time to apply."); return; }
@@ -71,6 +75,7 @@ export function DriveCreator({
           company: { name: form.company.trim(), description: `${form.company.trim()} campus hiring partner.` },
           role: form.role.trim(),
           package: pkg,
+          ...(pkgMax !== null ? { packageMax: pkgMax } : {}),
           location: form.location.trim(),
           jobType: "Full-time",
           description: form.description.trim(),
@@ -94,7 +99,7 @@ export function DriveCreator({
       }
 
       flash("Drive created. Eligible students are being notified by email.");
-      setForm((old) => ({ ...old, company: "", role: "", package: "", location: "", description: "", applyUrl: "", deadline: "" }));
+      setForm((old) => ({ ...old, company: "", role: "", package: "", packageMax: "", location: "", description: "", applyUrl: "", deadline: "" }));
       onCreated();
     } catch (error) {
       flash(error instanceof Error ? error.message : "Drive creation failed");
@@ -128,7 +133,8 @@ export function DriveCreator({
         <div className="grid-form">
           <label>Company<input value={form.company} onChange={(e) => setForm(old => ({ ...old, company: e.target.value }))} /></label>
           <label>Role<input value={form.role} onChange={(e) => setForm(old => ({ ...old, role: e.target.value }))} /></label>
-          <label>Package (LPA)<input value={form.package} onChange={(e) => setForm(old => ({ ...old, package: e.target.value }))} /></label>
+          <label>Package from (LPA)<input inputMode="decimal" placeholder="e.g. 3.5" value={form.package} onChange={(e) => setForm(old => ({ ...old, package: e.target.value }))} /></label>
+          <label>Package up to (LPA, optional)<input inputMode="decimal" placeholder="e.g. 5 (leave empty if fixed)" value={form.packageMax} onChange={(e) => setForm(old => ({ ...old, packageMax: e.target.value }))} /></label>
           <label>Location<input value={form.location} onChange={(e) => setForm(old => ({ ...old, location: e.target.value }))} /></label>
           <label>Min CGPA<input value={form.minCgpa} onChange={(e) => setForm(old => ({ ...old, minCgpa: e.target.value }))} /></label>
           <label>Max backlogs<input type="number" min="0" max="10" value={form.maxBacklogs} onChange={(e) => setForm(old => ({ ...old, maxBacklogs: e.target.value }))} /></label>
@@ -219,7 +225,7 @@ export function DriveCreator({
                 <div>
                   <strong style={{ fontSize: "14px", display: "block" }}>{d.company.name} — {d.role}</strong>
                   <span style={{ fontSize: "12px", color: "var(--muted)" }}>
-                    ₹{d.package} LPA · {d.location} · Deadline: {new Date(d.deadline).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" })}
+                    ₹{formatPackage(d.package, d.packageMax)} · {d.location} · Deadline: {new Date(d.deadline).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" })}
                   </span>
                 </div>
                 <button

@@ -16,6 +16,7 @@ import { verifyGoogleCredential } from "../lib/google.js";
 import { attachScope, studentWhere } from "../lib/scope.js";
 import { UserRole } from "@prisma/client";
 import { audit } from "../lib/audit.js";
+import { buildTpcInviteEmail, inviteMail } from "../services/inviteEmail.js";
 import { predictReadiness } from "../services/readiness.js";
 
 export const authRouter = Router();
@@ -341,6 +342,10 @@ authRouter.post("/users/tpc", authenticate, authorize(UserRole.ADMIN), async (re
 
   await audit(request.auth!.userId, "INVITE_TPC", "auth", { newTpcId: user.id, department: input.department });
   response.status(201).json(user);
+
+  // After the response: a slow or failing mail server must not block or fail the invite.
+  const mail = buildTpcInviteEmail({ name: input.name, email, department: input.department });
+  inviteMail.send({ to: email, subject: mail.subject, html: mail.html }).catch((error) => console.error("Could not send coordinator invite email:", error));
 });
 
 function parseCSV(text: string): string[][] {
