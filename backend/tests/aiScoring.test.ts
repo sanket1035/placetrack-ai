@@ -128,7 +128,7 @@ describe("AI routes", () => {
     expect(response.body.dimensions).toHaveLength(6);
     expect(response.body.score).toBeGreaterThan(0);
     expect(response.body.score).toBeLessThanOrEqual(10);
-    expect(["gemini", "heuristic"]).toContain(response.body.source);
+    expect(["ai", "heuristic"]).toContain(response.body.source);
   });
 });
 

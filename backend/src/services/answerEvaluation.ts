@@ -17,7 +17,7 @@ export type AnswerEvaluation = {
   weaknesses: string[];
   missingConcepts: string[];
   modelAnswer: string;
-  source: "gemini" | "heuristic";
+  source: "ai" | "heuristic";
   /** true when accuracy was checked against a reference or an AI judge, false when it is only estimated */
   verified: boolean;
   note?: string;
@@ -252,7 +252,7 @@ export function fromAiDimensions(
     weaknesses: list(data.weaknesses),
     missingConcepts: list(data.missingConcepts),
     modelAnswer: typeof data.modelAnswer === "string" ? data.modelAnswer : input.modelAnswer ?? "",
-    source: "gemini",
+    source: "ai",
     verified: true
   };
 }

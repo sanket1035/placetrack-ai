@@ -20,6 +20,45 @@ function cleanJsonResponse(text: string): string {
   return cleaned.trim();
 }
 
+export const GROQ_DEFAULT_MODEL = "llama-3.3-70b-versatile";
+
+/** Groq (OpenAI-compatible chat API). Used first when GROQ_API_KEY is set. */
+async function callGroq(prompt: string) {
+  const key = process.env.GROQ_API_KEY;
+  if (!key) return null;
+  const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${key}` },
+    body: JSON.stringify({
+      model: process.env.GROQ_MODEL || GROQ_DEFAULT_MODEL,
+      messages: [
+        { role: "system", content: "You are a precise assistant. Reply with a single valid JSON value only." },
+        { role: "user", content: prompt }
+      ],
+      response_format: { type: "json_object" },
+      temperature: 0.2
+    })
+  });
+  if (!response.ok) throw new Error(`Groq failed with ${response.status}`);
+  const body = await response.json() as { choices?: Array<{ message?: { content?: string } }> };
+  const text = body.choices?.[0]?.message?.content;
+  if (!text) return null;
+  return JSON.parse(cleanJsonResponse(text));
+}
+
+/** Provider router: Groq if configured, else Gemini; if Groq errors, Gemini is tried when configured. */
+async function callAI(prompt: string) {
+  if (process.env.GROQ_API_KEY) {
+    try {
+      return await callGroq(prompt);
+    } catch (error: any) {
+      if (!process.env.GEMINI_API_KEY) throw error;
+      console.warn("[ai] Groq failed, trying Gemini:", error?.message ?? error);
+    }
+  }
+  return callGemini(prompt);
+}
+
 async function callGemini(prompt: string) {
   const key = process.env.GEMINI_API_KEY;
   if (!key) return null;
@@ -77,7 +116,7 @@ export function generateInterviewQuestions(role = "software engineer", count = 6
 export async function generateInterviewQuestionsSmart(role = "software engineer", count = 6) {
   const fallback = generateInterviewQuestions(role, count);
   try {
-    const result = await callGemini(`Generate ${count} campus placement interview questions for role "${role}". Return JSON array only. Each item needs question, difficulty, focus.`);
+    const result = await callAI(`Generate ${count} campus placement interview questions for role "${role}". Return JSON array only. Each item needs question, difficulty, focus.`);
     let questionsArray: any[] = [];
     if (Array.isArray(result)) {
       questionsArray = result;
@@ -99,8 +138,8 @@ export async function generateInterviewQuestionsSmart(role = "software engineer"
   }
 }
 
-export function geminiConfigured() {
-  return Boolean(process.env.GEMINI_API_KEY);
+export function aiConfigured() {
+  return Boolean(process.env.GROQ_API_KEY || process.env.GEMINI_API_KEY);
 }
 
 /**
@@ -109,14 +148,14 @@ export function geminiConfigured() {
  */
 export async function evaluateAnswer(input: EvaluationInput): Promise<AnswerEvaluation> {
   const heuristic = evaluateAnswerHeuristic(input);
-  if (!geminiConfigured()) return heuristic;
+  if (!aiConfigured()) return heuristic;
   try {
-    const result = await callGemini(evaluationPrompt(input));
+    const result = await callAI(evaluationPrompt(input));
     const parsed = fromAiDimensions(result, input);
     if (parsed) return parsed;
     return { ...heuristic, note: `${heuristic.note ?? ""} AI response was invalid, so the content-based evaluator was used.`.trim() };
   } catch (error: any) {
-    console.warn("[ai] Gemini evaluation failed:", error?.message ?? error);
+    console.warn("[ai] evaluation failed:", error?.message ?? error);
     return { ...heuristic, note: `${heuristic.note ?? ""} The AI service was unavailable, so the content-based evaluator was used.`.trim() };
   }
 }
@@ -139,7 +178,7 @@ Response:`;
   };
 
   try {
-    const result = await callGemini(prompt);
+    const result = await callAI(prompt);
     if (!result) return fallback;
     return {
       question: typeof result.question === "string" ? result.question : fallback.question,

@@ -1140,7 +1140,7 @@ type InterviewEvaluation = {
   missingConcepts?: string[];
   modelAnswer: string;
   dimensions: Array<{ key: string; label: string; score: number }>;
-  source: "gemini" | "heuristic";
+  source: "ai" | "heuristic";
   verified: boolean;
   note?: string;
 };
@@ -1374,7 +1374,7 @@ function InterviewCoach({ token, flash }: { token: string; flash: (message: stri
         body: JSON.stringify({ question: questionText, answer, role: selectedRole, category: activeTab === "soft" ? "Behavioral" : "Technical" }),
       });
       setEvaluations((prev) => ({ ...prev, [questionText]: response }));
-      flash(response.source === "gemini" ? "Answer evaluated by AI." : "Answer evaluated.");
+      flash(response.source === "ai" ? "Answer evaluated by AI." : "Answer evaluated.");
     } catch (error) {
       flash(error instanceof Error ? error.message : "Feedback generation failed");
     } finally {
