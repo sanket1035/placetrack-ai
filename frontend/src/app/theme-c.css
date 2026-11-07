@@ -352,3 +352,7 @@ h1, h2, h3, h4 { font-family: var(--font-display); font-weight: 800; letter-spac
 .brand-word { font-size: 19px; font-weight: 800; letter-spacing: -0.01em; color: #1B3A0A; }
 .brand-word mark { background: var(--sun); color: inherit; padding: 0 4px; border-radius: 5px; margin-left: -4px; }
 @media (max-width: 520px) { .brand-society { height: 32px; } .brand-word { font-size: 17px; } }
+
+.auth-brand-logo { display: flex; align-items: center; gap: 10px; }
+.auth-college-note { margin: 0 0 14px; font-size: 13px; font-weight: 600; color: #1B3A0A; background: var(--sun); padding: 6px 12px; border-radius: 999px; width: fit-content; }
+.auth-brand-logo .brand-word { font-size: 22px; line-height: 1.3; }

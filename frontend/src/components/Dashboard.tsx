@@ -9,7 +9,7 @@ import {
   Sparkles, Gauge, Users, Target, Download, Plus, CheckCircle2, ArrowUpRight,
   Sun, Moon, Upload, Send, CalendarDays, Trophy, Share2, Trash2, ChevronDown, ClipboardList
 } from "lucide-react";
-import { api, ROLE_LABEL, type LoginResponse, type Role, type SessionUser } from "@/lib/api";
+import { api, ApiError, ROLE_LABEL, type LoginResponse, type Role, type SessionUser } from "@/lib/api";
 import { NotificationBell } from "./NotificationBell";
 import { useNotifications } from "../hooks/useNotifications";
 import PracticeView from "./PracticeView";
@@ -124,6 +124,8 @@ export function Dashboard() {
   const [notice, setNotice] = useState("");
   const [token, setToken] = useState<string | null>(null);
   const [user, setUser] = useState<SessionUser | null>(null);
+  // True until we know whether a saved session exists, so a refresh never flashes the sign-in screen.
+  const [restoring, setRestoring] = useState(true);
   const [dashboard, setDashboard] = useState<DashboardData | null>(null);
   const [drives, setDrives] = useState<Drive[]>([]);
   const [applications, setApplications] = useState<Application[]>([]);
@@ -151,18 +153,36 @@ export function Dashboard() {
 
   useEffect(() => {
     const savedToken = readStorage("placetrack-token");
-    if (savedToken) {
-      api<SessionUser>("/api/auth/me", savedToken)
-        .then((freshUser) => {
-          setToken(savedToken);
-          setUser(freshUser);
-          writeStorage("placetrack-user", JSON.stringify(freshUser));
-        })
-        .catch(() => {
+    if (!savedToken) {
+      setRestoring(false);
+      return;
+    }
+    // Show the saved session immediately; the server check below only corrects it or signs out on 401.
+    let storedUser: SessionUser | null = null;
+    try {
+      storedUser = JSON.parse(readStorage("placetrack-user") || "null");
+    } catch {
+      storedUser = null;
+    }
+    if (storedUser && storedUser.role) {
+      setToken(savedToken);
+      setUser(storedUser);
+      setRestoring(false);
+    }
+    api<SessionUser>("/api/auth/me", savedToken)
+      .then((freshUser) => {
+        setToken(savedToken);
+        setUser(freshUser);
+        writeStorage("placetrack-user", JSON.stringify(freshUser));
+      })
+      .catch((error) => {
+        // Only an explicit 401 ends the session (handled by the unauthorized listener). A slow or sleeping server must not log the user out.
+        if (error instanceof ApiError && error.status === 401) {
           removeStorage("placetrack-token");
           removeStorage("placetrack-user");
-        });
-    }
+        }
+      })
+      .finally(() => setRestoring(false));
   }, []);
 
   useEffect(() => {
@@ -330,6 +350,14 @@ export function Dashboard() {
       t.title.toLowerCase().includes(q)
     );
   }, [tests, searchQuery]);
+
+  if (restoring && (!user || !token)) {
+    return (
+      <main className="app light login-app" aria-busy="true">
+        <div className="auth-shell"><section className="auth-card"><p className="auth-sub"><Loader2 className="spin" size={16} /> Opening your workspace...</p></section></div>
+      </main>
+    );
+  }
 
   if (!user || !token) {
     return <LoginScreen loading={loading} onGoogleCredential={handleGoogleCredential} />;

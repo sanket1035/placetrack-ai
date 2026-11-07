@@ -76,7 +76,12 @@ export function LoginScreen({ loading, onGoogleCredential }: {
     <main className="app light login-app">
       <div className="auth-shell">
         <section className="auth-hero">
-          <div className="auth-brand">PlaceTrack AI</div>
+          <div className="auth-brand auth-brand-logo">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/brand/kkw-society.png" alt="Karmaveer Kakasaheb Wagh Education Society" className="brand-society" width={68} height={40} />
+            <span className="brand-divider" aria-hidden="true" />
+            <span className="brand-word">Place<mark>Track</mark></span>
+          </div>
           <div>
             <span className="auth-tag">Placement management</span>
             <h1>Your placement season, <mark>organised.</mark></h1>
@@ -90,6 +95,7 @@ export function LoginScreen({ loading, onGoogleCredential }: {
         <section className="auth-card">
           <h2>Sign in</h2>
           <p className="auth-sub">Sign in with your Google account.</p>
+          <p className="auth-college-note">Sign in only with your KKWagh college email ID.</p>
 
           {CLIENT_ID ? (
             <div className="auth-google" ref={buttonRef} aria-busy={loading} />
