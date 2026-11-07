@@ -38,6 +38,27 @@ aiRouter.post("/resume/text", async (request, response) => {
   }
 });
 
+/**
+ * Rebuilds readable lines from pdf.js text items. Joining everything with spaces would flatten the page to one
+ * line and hide section headings (EXPERIENCE, PROJECTS...), so a new line starts at every end-of-line marker
+ * and whenever the vertical position changes.
+ */
+export function pdfItemsToText(items: Array<{ str?: string; hasEOL?: boolean; transform?: number[] }>): string {
+  const lines: string[] = [];
+  let current = "";
+  let lastY: number | null = null;
+  const flush = () => { if (current.trim()) lines.push(current.replace(/\s+/g, " ").trim()); current = ""; };
+  for (const item of items) {
+    const y = item.transform?.[5] ?? null;
+    if (lastY !== null && y !== null && Math.abs(y - lastY) > 2) flush();
+    current += item.str ?? "";
+    if (y !== null) lastY = y;
+    if (item.hasEOL) flush();
+  }
+  flush();
+  return lines.join("\n");
+}
+
 // 2. PDF, DOCX and TXT upload analyzer
 async function extractResumeText(file: Express.Multer.File): Promise<string> {
   const name = file.originalname.toLowerCase();
@@ -55,7 +76,7 @@ async function extractResumeText(file: Express.Multer.File): Promise<string> {
       const pages: string[] = [];
       for (let index = 1; index <= pdf.numPages; index++) {
         const content = await (await pdf.getPage(index)).getTextContent();
-        pages.push(content.items.map((item: any) => item.str || "").join(" "));
+        pages.push(pdfItemsToText(content.items as any[]));
       }
       return pages.join("\n");
     }

@@ -77,14 +77,15 @@ authRouter.post("/google", loginLimiter, async (request, response) => {
         error: "This email domain is not allowed to sign up. Use an allowed email, or ask your Training & Placement Coordinator."
       });
     }
-    await audit(user.id, "SIGNUP", "auth");
+    audit(user.id, "SIGNUP", "auth").catch(() => {});
   } else {
     user = await prisma.user.update({
       where: { id: user.id },
       data: { googleId: profile.sub, name: user.name ?? profile.name, avatarUrl: profile.picture ?? user.avatarUrl, lastLoginAt: new Date() },
       include: { student: true, coordinator: true }
     });
-    await audit(user.id, "LOGIN", "auth").catch(() => {});
+    // Audit logging must not delay the sign-in response.
+    audit(user.id, "LOGIN", "auth").catch(() => {});
   }
 
   response.json({ token: signToken(user.id, user.role), user });

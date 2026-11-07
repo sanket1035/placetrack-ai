@@ -2,6 +2,7 @@ import "dotenv/config";
 import cors from "cors";
 import express from "express";
 import helmet from "helmet";
+import compression from "compression";
 import morgan from "morgan";
 import { MulterError } from "multer";
 import { Prisma } from "@prisma/client";
@@ -35,6 +36,8 @@ const allowedOrigins = new Set([
 ]);
 
 app.use(helmet({ crossOriginResourcePolicy: { policy: "cross-origin" } }));
+// gzip: the drives and applications lists are 30-100 KB of JSON, so this cuts transfer time on slow links.
+app.use(compression());
 app.disable("etag");
 app.use((_request, response, next) => {
   response.setHeader("Cache-Control", "no-store");
