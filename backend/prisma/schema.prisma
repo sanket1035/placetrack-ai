@@ -107,6 +107,8 @@ model PlacementDrive {
   maxBacklogs      Int
   graduationYear   Int
   deadline         DateTime
+  /** College Google Form (or other) link students use to apply; PlaceTrack only tracks the application. */
+  applyUrl         String?
   testDate         DateTime?
   interviewDate    DateTime?
   status           DriveStatus   @default(OPEN)

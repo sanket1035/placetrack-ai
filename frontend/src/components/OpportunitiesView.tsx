@@ -90,7 +90,7 @@ export function Opportunities({
                     </div>
                   )}
                   <span className="deadline-chip">
-                    Closes {new Date(drive.deadline).toLocaleDateString()}
+                    Closes {new Date(drive.deadline).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" })}
                   </span>
                 </div>
 
@@ -248,7 +248,7 @@ export function Opportunities({
                           justifyContent: "center"
                         }}
                       >
-                        View & Apply <ArrowUpRight size={12} />
+                        View details <ArrowUpRight size={12} />
                       </button>
                     )}
                   </div>

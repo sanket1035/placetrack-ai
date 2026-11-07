@@ -9,7 +9,7 @@ import { authenticate, authorize } from "../middleware/auth.js";
 import { attachScope, driveWhere } from "../lib/scope.js";
 import { checkEligibility } from "../services/eligibility.js";
 import { audit } from "../lib/audit.js";
-import { emitToUser } from "../lib/socket.js";
+import { notifyEligibleStudents } from "../services/driveNotifications.js";
 
 export const drivesRouter = Router();
 
@@ -109,6 +109,8 @@ drivesRouter.get("/:id", async (request, response) => {
   response.json(drive);
 });
 
+const applyUrlSchema = z.string().trim().url().refine((value) => /^https?:\/\//i.test(value), "Apply link must start with http:// or https://");
+
 const driveSchema = z.object({
   company: z.object({ name: z.string().min(2), website: z.string().url().optional(), description: z.string().optional() }),
   role: z.string().min(2),
@@ -121,6 +123,7 @@ const driveSchema = z.object({
   maxBacklogs: z.number().int().min(0),
   graduationYear: z.number().int(),
   deadline: z.coerce.date(),
+  applyUrl: applyUrlSchema.optional(),
   testDate: z.coerce.date().optional(),
   interviewDate: z.coerce.date().optional(),
   status: z.nativeEnum(DriveStatus).default(DriveStatus.OPEN)
@@ -145,27 +148,13 @@ drivesRouter.post("/", authorize(UserRole.TPC, UserRole.ADMIN), async (request, 
   });
   await audit(request.auth!.userId, "CREATE", "placement-drive", { driveId: drive.id });
 
-  // Find all eligible students and send notifications
-  try {
-    const students = await prisma.student.findMany({ where: request.scope!.department ? { branch: request.scope!.department } : {} });
-    for (const student of students) {
-      const eligibility = checkEligibility(student, drive);
-      if (eligibility.eligible) {
-        const notification = await prisma.notification.create({
-          data: {
-            userId: student.userId,
-            title: "New Eligible Drive",
-            message: `${drive.company.name} is hiring for ${drive.role}`
-          }
-        });
-        emitToUser(student.userId, "drive:new", notification);
-      }
-    }
-  } catch (error) {
-    console.error("Failed to notify eligible students for new drive:", error);
-  }
-
   response.status(201).json(drive);
+
+  // Notify and email eligible students after responding so publishing stays fast.
+  notifyEligibleStudents(drive, request.scope!.department).catch((error) => {
+    console.error("Failed to notify eligible students for new drive:", error);
+  });
+
 });
 
 const patchDriveSchema = z.object({
@@ -180,6 +169,7 @@ const patchDriveSchema = z.object({
   maxBacklogs: z.number().int().min(0).optional(),
   graduationYear: z.number().int().optional(),
   deadline: z.coerce.date().optional(),
+  applyUrl: applyUrlSchema.nullable().optional(),
   testDate: z.coerce.date().optional(),
   interviewDate: z.coerce.date().optional(),
   status: z.nativeEnum(DriveStatus).optional()
