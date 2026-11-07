@@ -23,17 +23,19 @@ export function Analytics({
     departmentPlacements: Array<{ branch: string; totalStudents: number; placedStudents: number; placementRate: number }>;
   } | null>(null);
   const [loadingAnalytics, setLoadingAnalytics] = useState(false);
+  const [analyticsError, setAnalyticsError] = useState("");
   const [downloadingType, setDownloadingType] = useState<string | null>(null);
 
   useEffect(() => {
     if (!token) return;
     setLoadingAnalytics(true);
+    setAnalyticsError("");
     api<any>("/api/reports/analytics", token)
       .then((data) => {
         setAnalyticsData(data);
       })
       .catch((err) => {
-        console.warn("Failed to fetch analytical data:", err);
+        setAnalyticsError(err instanceof Error ? err.message : "Could not load analytics.");
       })
       .finally(() => {
         setLoadingAnalytics(false);
@@ -111,6 +113,11 @@ export function Analytics({
         <section className="card" style={{ padding: "40px", display: "grid", placeItems: "center" }}>
           <Loader2 className="spin" size={32} style={{ color: "var(--secondary)" }} />
           <p style={{ marginTop: "12px", color: "var(--muted)" }}>Aggregating campus trends and records...</p>
+        </section>
+      ) : analyticsError ? (
+        <section className="card" style={{ padding: "32px" }}>
+          <h3>Analytics could not be loaded</h3>
+          <p className="section-copy">{analyticsError}</p>
         </section>
       ) : (
         <>

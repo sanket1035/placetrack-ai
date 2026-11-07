@@ -98,17 +98,20 @@ questionsRouter.post("/:id/attempt", async (request, response) => {
   }
 
   // Evaluate candidate answer with Gemini AI
-  const evaluation = await evaluateAttemptSmart(question.question, answer, question.role);
+  const evaluation = await evaluateAttemptSmart(question.question, answer, question.role, {
+    category: question.category,
+    modelAnswer: question.modelAnswer
+  });
 
   const attempt = await prisma.questionAttempt.create({
     data: {
       questionId: question.id,
       userId: request.auth!.userId,
       answer,
-      score: evaluation.score,
+      score: Math.round(evaluation.score),
       feedback: evaluation.feedback
     }
   });
 
-  response.status(201).json(attempt);
+  response.status(201).json({ ...attempt, evaluation: evaluation.evaluation });
 });

@@ -116,6 +116,20 @@ authRouter.patch("/me/student", authenticate, async (request, response) => {
   const student = await prisma.student.findUnique({ where: { userId: request.auth!.userId } });
   if (!student) return response.status(404).json({ error: "Student profile not found" });
 
+  const academicFields = ["name", "branch", "cgpa", "graduationYear", "backlogs"] as const;
+  if (student.onboarded) {
+    // After onboarding, academic details drive eligibility, so only a TPC or admin may change them.
+    const changed = academicFields.filter((field) => input[field] !== undefined && input[field] !== student[field]);
+    if (changed.length) {
+      return response.status(403).json({ error: `${changed.join(", ")} can only be changed by your Training & Placement Coordinator.` });
+    }
+  } else {
+    // First-time setup must state the core academic details.
+    if (!input.branch || input.branch === "Undeclared") return response.status(400).json({ error: "Select your department to finish your profile." });
+    if (input.cgpa === undefined || input.cgpa <= 0) return response.status(400).json({ error: "Enter your current CGPA (between 0 and 10)." });
+    if (input.graduationYear === undefined) return response.status(400).json({ error: "Enter your graduation year." });
+  }
+
   const nextCgpa = input.cgpa ?? student.cgpa;
   const nextSkills = input.skills ?? student.skills;
   const nextBacklogs = input.backlogs ?? student.backlogs;

@@ -4,6 +4,7 @@ import { z } from "zod";
 import { prisma } from "../lib/prisma.js";
 import { audit } from "../lib/audit.js";
 import { authenticate, authorize } from "../middleware/auth.js";
+import { STARTER_TESTS } from "../data/aptitudeBank.js";
 
 export const testsRouter = Router();
 testsRouter.use(authenticate);
@@ -14,6 +15,21 @@ testsRouter.get("/", async (_request, response) => {
     orderBy: { createdAt: "desc" }
   });
   response.json(tests);
+});
+
+// Admin-only, idempotent: creates the starter mock tests that do not exist yet (matched by title).
+testsRouter.post("/starter-bank", authorize(UserRole.ADMIN), async (request, response) => {
+  const existing = new Set((await prisma.aptitudeTest.findMany({ select: { title: true } })).map((test) => test.title));
+  const created: string[] = [];
+  for (const test of STARTER_TESTS) {
+    if (existing.has(test.title)) continue;
+    await prisma.aptitudeTest.create({
+      data: { title: test.title, duration: test.duration, sectionConfig: test.sectionConfig, questions: { create: test.questions } }
+    });
+    created.push(test.title);
+  }
+  await audit(request.auth!.userId, "CREATE", "aptitude-starter-bank", { created });
+  response.status(created.length ? 201 : 200).json({ created, skipped: STARTER_TESTS.length - created.length });
 });
 
 testsRouter.get("/:id", async (request, response) => {
@@ -49,14 +65,23 @@ testsRouter.post("/:id/submit", authorize(UserRole.STUDENT), async (request, res
     prisma.aptitudeTest.findUnique({ where: { id: String(request.params.id) }, include: { questions: true } })
   ]);
   if (!student || !test) return response.status(404).json({ error: "Student or test not found" });
+  if (!test.questions.length) return response.status(409).json({ error: "This test has no questions yet." });
   const section = new Map<string, { correct: number; total: number }>();
   let correct = 0;
-  for (const question of test.questions) {
+  let attempted = 0;
+  const review = test.questions.map((question) => {
+    const chosen = answers[question.id];
+    const isCorrect = chosen === question.correctAnswer;
     const stat = section.get(question.section) ?? { correct: 0, total: 0 };
     stat.total++;
-    if (answers[question.id] === question.correctAnswer) { stat.correct++; correct++; }
+    if (chosen !== undefined) attempted++;
+    if (isCorrect) { stat.correct++; correct++; }
     section.set(question.section, stat);
-  }
+    return {
+      questionId: question.id, section: question.section, questionText: question.questionText, options: question.options,
+      chosen: chosen ?? null, correctAnswer: question.correctAnswer, isCorrect, explanation: question.explanation
+    };
+  });
   const sectionScores = Object.fromEntries([...section].map(([name, stat]) => [name, Math.round(stat.correct / stat.total * 100)]));
   const accuracy = Math.round(correct / test.questions.length * 100);
   const strongAreas = Object.entries(sectionScores).filter(([, score]) => score >= 70).map(([name]) => name);
@@ -68,7 +93,7 @@ testsRouter.post("/:id/submit", authorize(UserRole.STUDENT), async (request, res
   });
   await prisma.student.update({ where: { id: student.id }, data: { mockTestCount: { increment: 1 } } });
   await audit(request.auth!.userId, "SUBMIT", "aptitude-test", { testId: test.id, accuracy });
-  response.json({ ...result, totalQuestions: test.questions.length });
+  response.json({ ...result, totalQuestions: test.questions.length, attempted, unanswered: test.questions.length - attempted, review });
 });
 
 testsRouter.get("/debug-error/:type", async (request, response) => {

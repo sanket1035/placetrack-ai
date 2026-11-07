@@ -24,9 +24,7 @@ describe("readiness predictor", () => {
 });
 
 describe("resume analyzer", () => {
-  it("rewards complete, quantified resumes", () => {
-    const result = analyzeResumeText("Aarav aarav@example.com +91 9876543210 Education Skills JavaScript TypeScript React Node.js SQL Projects Experience Improved API speed by 35% for 1000 users Achievements");
-    expect(result.score).toBeGreaterThan(70);
-    expect(result.skills).toContain("react");
+  it("refuses a one-line keyword dump instead of scoring it highly", () => {
+    expect(() => analyzeResumeText("Aarav aarav@example.com +91 9876543210 Education Skills JavaScript TypeScript React Node.js SQL Projects Experience Improved API speed by 35% for 1000 users Achievements")).toThrow(/readable words/);
   });
 });

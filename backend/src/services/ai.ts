@@ -1,51 +1,14 @@
-const skillLibrary = [
-  "javascript", "typescript", "react", "next.js", "node.js", "express", "python",
-  "java", "c++", "sql", "postgresql", "mongodb", "aws", "docker", "git",
-  "machine learning", "data structures", "algorithms", "communication"
-];
+import { analyzeResume, type ResumeAnalysis } from "./resumeScoring.js";
+import {
+  evaluateAnswerHeuristic, evaluationPrompt, fromAiDimensions,
+  type AnswerEvaluation, type EvaluationInput
+} from "./answerEvaluation.js";
 
-export function analyzeResumeText(text: string) {
-  const normalized = text.toLowerCase();
-  const skills = skillLibrary.filter((skill) => normalized.includes(skill));
-  const hasEmail = /[\w.+-]+@[\w.-]+\.[a-z]{2,}/i.test(text);
-  const hasPhone = /(?:\+?\d[\d\s-]{8,}\d)/.test(text);
-  const sectionHits = ["education", "experience", "projects", "skills", "achievements"]
-    .filter((section) => normalized.includes(section));
-  const quantified = (text.match(/\b\d+(?:\.\d+)?%|\b\d+\+?\s+(?:users|projects|clients|students|requests)/gi) ?? []).length;
-  const score = Math.min(100,
-    25 + sectionHits.length * 8 + skills.length * 2 + (hasEmail ? 5 : 0) +
-    (hasPhone ? 5 : 0) + Math.min(quantified, 4) * 4
-  );
+export const GEMINI_DEFAULT_MODEL = "gemini-2.5-flash";
 
-  const suggestions: string[] = [];
-  if (sectionHits.length < 4) suggestions.push("Add clear Education, Experience, Projects, and Skills sections.");
-  if (quantified < 2) suggestions.push("Quantify impact with metrics, scale, accuracy, or performance improvements.");
-  if (skills.length < 5) suggestions.push("Mirror the most relevant technical keywords from the target job description.");
-  if (!hasEmail || !hasPhone) suggestions.push("Add complete contact details at the top.");
-
-  return { score, skills, sectionHits, suggestions, contactComplete: hasEmail && hasPhone };
-}
-
-type GeminiResumeResponse = {
-  score: number;
-  skills: string[];
-  sectionHits: string[];
-  suggestions: string[];
-  contactComplete: boolean;
-  source: "gemini" | "heuristic";
-};
-
-function normalizeResumeResponse(value: unknown, fallback: ReturnType<typeof analyzeResumeText>): GeminiResumeResponse {
-  if (!value || typeof value !== "object") return { ...fallback, source: "heuristic" };
-  const data = value as Partial<GeminiResumeResponse>;
-  return {
-    score: typeof data.score === "number" ? Math.max(0, Math.min(100, Math.round(data.score))) : fallback.score,
-    skills: Array.isArray(data.skills) ? data.skills.map(String).slice(0, 20) : fallback.skills,
-    sectionHits: Array.isArray(data.sectionHits) ? data.sectionHits.map(String).slice(0, 10) : fallback.sectionHits,
-    suggestions: Array.isArray(data.suggestions) ? data.suggestions.map(String).slice(0, 8) : fallback.suggestions,
-    contactComplete: typeof data.contactComplete === "boolean" ? data.contactComplete : fallback.contactComplete,
-    source: "gemini"
-  };
+/** Resume scoring is deterministic and based only on the extracted text. */
+export function analyzeResumeText(text: string, targetSkills?: string[]): ResumeAnalysis {
+  return analyzeResume(text, { targetSkills });
 }
 
 function cleanJsonResponse(text: string): string {
@@ -60,7 +23,7 @@ function cleanJsonResponse(text: string): string {
 async function callGemini(prompt: string) {
   const key = process.env.GEMINI_API_KEY;
   if (!key) return null;
-  const model = process.env.GEMINI_MODEL || "gemini-1.5-flash";
+  const model = process.env.GEMINI_MODEL || GEMINI_DEFAULT_MODEL;
   const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -75,16 +38,6 @@ async function callGemini(prompt: string) {
   if (!text) return null;
   const cleanedText = cleanJsonResponse(text);
   return JSON.parse(cleanedText);
-}
-
-export async function analyzeResumeTextSmart(text: string) {
-  const fallback = analyzeResumeText(text);
-  try {
-    const result = await callGemini(`Analyze this student resume for campus placements. Return strict JSON only with keys: score number 0-100, skills string[], sectionHits string[], suggestions string[], contactComplete boolean. Resume:\n\n${text.slice(0, 18000)}`);
-    return normalizeResumeResponse(result, fallback);
-  } catch {
-    return { ...fallback, source: "heuristic" as const };
-  }
 }
 
 const questionBank: Record<string, string[]> = {
@@ -146,41 +99,25 @@ export async function generateInterviewQuestionsSmart(role = "software engineer"
   }
 }
 
-export async function evaluateInterviewAnswerSmart(question: string, answer: string, role: string) {
-  const fallback = {
-    score: answer.trim().length > 50 ? 7 : answer.trim().length > 20 ? 5 : 3,
-    strengths: ["Provided a relevant response", "Communicated key ideas"],
-    weaknesses: ["Could provide more specific details or industry terminology"],
-    modelAnswer: "A high-quality response should clearly address the core question using specific technical terms, structured explanation (e.g., STAR method for behavioral), and mention best practices or real-world application."
-  };
+export function geminiConfigured() {
+  return Boolean(process.env.GEMINI_API_KEY);
+}
 
+/**
+ * Evaluates an answer on its content. Uses the AI judge when configured and falls back to the
+ * content-based evaluator (never to a length-based score) if the AI call fails or returns junk.
+ */
+export async function evaluateAnswer(input: EvaluationInput): Promise<AnswerEvaluation> {
+  const heuristic = evaluateAnswerHeuristic(input);
+  if (!geminiConfigured()) return heuristic;
   try {
-    const prompt = `You are an expert technical interviewer evaluating a student candidate for a ${role} position.
-Evaluate their answer to the interview question below.
-
-Question: ${question}
-Candidate's Answer: ${answer}
-
-Evaluate and return a strict JSON response ONLY. Do not wrap in extra explanation or markdown blocks outside valid JSON.
-JSON keys required:
-- score: number from 1 to 10
-- strengths: array of strings containing strengths of the answer
-- weaknesses: array of strings containing weaknesses or areas of improvement
-- modelAnswer: string containing a high-quality model response for this question
-
-Response:`;
-
-    const result = await callGemini(prompt);
-    if (!result) return fallback;
-
-    return {
-      score: typeof result.score === "number" ? Math.max(1, Math.min(10, Math.round(result.score))) : fallback.score,
-      strengths: Array.isArray(result.strengths) ? result.strengths.map(String) : fallback.strengths,
-      weaknesses: Array.isArray(result.weaknesses) ? result.weaknesses.map(String) : fallback.weaknesses,
-      modelAnswer: typeof result.modelAnswer === "string" ? result.modelAnswer : fallback.modelAnswer
-    };
-  } catch {
-    return fallback;
+    const result = await callGemini(evaluationPrompt(input));
+    const parsed = fromAiDimensions(result, input);
+    if (parsed) return parsed;
+    return { ...heuristic, note: `${heuristic.note ?? ""} AI response was invalid, so the content-based evaluator was used.`.trim() };
+  } catch (error: any) {
+    console.warn("[ai] Gemini evaluation failed:", error?.message ?? error);
+    return { ...heuristic, note: `${heuristic.note ?? ""} The AI service was unavailable, so the content-based evaluator was used.`.trim() };
   }
 }
 
@@ -214,34 +151,13 @@ Response:`;
   }
 }
 
-export async function evaluateAttemptSmart(question: string, answer: string, role: string) {
-  const prompt = `You are an expert technical interviewer evaluating a student candidate for a ${role} position.
-Evaluate their answer to the interview question below.
-
-Question: ${question}
-Candidate's Answer: ${answer}
-
-Evaluate and return a strict JSON response ONLY. Do not wrap in extra explanation or markdown blocks outside valid JSON.
-JSON keys required:
-- score: number from 1 to 10
-- feedback: string containing a detailed constructive feedback covering strengths, weaknesses, and how to improve.
-
-Response:`;
-
-  const fallback = {
-    score: answer.trim().length > 50 ? 7 : answer.trim().length > 20 ? 5 : 3,
-    feedback: "The answer provided addresses the question, but could be enhanced with more specific details, structured explanations, or technical terminologies."
-  };
-
-  try {
-    const result = await callGemini(prompt);
-    if (!result) return fallback;
-    return {
-      score: typeof result.score === "number" ? Math.max(1, Math.min(10, Math.round(result.score))) : fallback.score,
-      feedback: typeof result.feedback === "string" ? result.feedback : fallback.feedback
-    };
-  } catch {
-    return fallback;
-  }
+export async function evaluateAttemptSmart(question: string, answer: string, role: string, extra: { category?: string; modelAnswer?: string | null } = {}) {
+  const result = await evaluateAnswer({ question, answer, role, ...extra });
+  const parts = [
+    `${result.verdict} (${result.score}/10).`,
+    result.strengths.length ? `Strengths: ${result.strengths.join(" ")}` : "",
+    result.weaknesses.length ? `To improve: ${result.weaknesses.join(" ")}` : "",
+    result.note ?? ""
+  ].filter(Boolean);
+  return { score: result.score, feedback: parts.join("\n"), evaluation: result };
 }
-
