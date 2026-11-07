@@ -1807,56 +1807,14 @@ function PageTitle({ eyebrow, title, copy }: { eyebrow: string; title: string; c
 
 function Stat({ icon, value, label, sub, tone, trend }: { icon: ReactNode; value: string; label: string; sub: string; tone: string; trend?: string }) {
   return (
-    <div className="card stat-card" style={{
-      display: "flex",
-      alignItems: "center",
-      gap: "16px",
-      padding: "20px",
-      position: "relative",
-      overflow: "hidden"
-    }}>
-      {/* Soft gradient background glow matching tone */}
-      <div className={`stat-glow ${tone}`} style={{
-        position: "absolute",
-        top: "-20px",
-        right: "-20px",
-        width: "60px",
-        height: "60px",
-        borderRadius: "50%",
-        opacity: 0.12,
-        filter: "blur(12px)"
-      }} />
-      <div className={`stat-icon ${tone}`} style={{
-        width: "46px",
-        height: "46px",
-        borderRadius: "12px",
-        display: "grid",
-        placeItems: "center",
-        flexShrink: 0
-      }}>{icon}</div>
-      <div style={{ flexGrow: 1, display: "grid", gap: "2px" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
-          <strong style={{ fontSize: "22px", fontWeight: 800, letterSpacing: "-0.03em" }}>{value}</strong>
-          {trend && (
-            <span style={{
-              fontSize: "10px",
-              fontWeight: 800,
-              color: trend.startsWith("▲") ? "var(--success)" : "var(--muted)",
-              fontFamily: "var(--font-mono)",
-              display: "inline-flex",
-              alignItems: "center",
-              gap: "2px",
-              background: trend.startsWith("▲") ? "rgba(34, 197, 94, 0.12)" : "rgba(255, 255, 255, 0.05)",
-              padding: "2px 6px",
-              borderRadius: "6px",
-              marginLeft: "8px"
-            }}>
-              {trend}
-            </span>
-          )}
-        </div>
-        <span style={{ fontSize: "11px", color: "var(--muted)", fontWeight: 500 }}>{label}</span>
-        <small style={{ fontSize: "9px", color: "rgba(255, 255, 255, 0.4)", marginTop: "2px" }}>{sub}</small>
+    <div className={`card stat-card tone-${tone}`}>
+      <div className="stat-top">
+        <span className="stat-label">{label}</span>
+        <span className="stat-icon" aria-hidden="true">{icon}</span>
+      </div>
+      <strong className="stat-value">{value}</strong>
+      <div className="stat-foot">
+        <small>{sub}</small>
       </div>
     </div>
   );

@@ -62,73 +62,34 @@ export function Opportunities({
         </div>
       ) : (
         <div className="opportunity-grid">
-          {sortedDrives.slice(0, 24).map((drive) => {
+          {sortedDrives.slice(0, 24).map((drive, index) => {
             const eligible = drive.eligibility?.eligible !== false;
             const hasEligibility = !!drive.eligibility;
             const branding = getCompanyBranding(drive.company.name);
             return (
               <article
-                className="card opportunity-card"
+                className={`card opportunity-card pastel-${index % 4}`}
                 key={drive.id}
                 style={{
                   display: "flex",
                   flexDirection: "column",
                   padding: "24px",
                   position: "relative",
-                  borderTop: `4px solid ${branding.accentColor}`,
-                  background: "linear-gradient(135deg, var(--panel) 0%, var(--panel-2) 100%)",
-                  gap: "14px",
-                  boxShadow: "var(--shadow-md)"
+                  gap: "14px"
                 }}
               >
-                {/* Glowing decorative shape inside the card */}
-                <div
-                  style={{
-                    position: "absolute",
-                    top: "10px",
-                    right: "10px",
-                    width: "40px",
-                    height: "40px",
-                    borderRadius: "50%",
-                    background: `radial-gradient(circle, ${branding.accentColor}15 0%, transparent 70%)`,
-                    pointerEvents: "none"
-                  }}
-                />
-
                 {/* Badges row */}
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "6px" }}>
                   {hasEligibility && (
                     <div
-                      className="status-badge"
+                      className={eligible ? "status-badge ok" : "status-badge bad"}
                       title={!eligible && drive.eligibility?.reasons ? drive.eligibility.reasons.join("\n") : undefined}
-                      style={{
-                        color: eligible ? "var(--success)" : "var(--error)",
-                        background: eligible ? "rgba(27, 222, 204, 0.1)" : "rgba(255, 107, 107, 0.1)",
-                        border: eligible ? "1px solid rgba(27, 222, 204, 0.2)" : "1px solid rgba(255, 107, 107, 0.2)",
-                        display: "inline-flex",
-                        alignItems: "center",
-                        gap: "4px",
-                        fontWeight: 700,
-                        fontSize: "10px",
-                        padding: "4px 8px",
-                        borderRadius: "6px"
-                      }}
                     >
                       {eligible ? <CheckCircle2 size={10} /> : <X size={10} />}
-                      Check Eligibility: {eligible ? "Eligible" : "Ineligible"}
+                      {eligible ? "Eligible" : "Not eligible"}
                     </div>
                   )}
-                  <span
-                    className="deadline-chip"
-                    style={{
-                      color: "var(--warning)",
-                      background: "rgba(247, 189, 78, 0.1)",
-                      padding: "4px 8px",
-                      borderRadius: "6px",
-                      fontSize: "9px",
-                      fontWeight: 700
-                    }}
-                  >
+                  <span className="deadline-chip">
                     Closes {new Date(drive.deadline).toLocaleDateString()}
                   </span>
                 </div>
@@ -163,8 +124,9 @@ export function Opportunities({
                       width: "48px",
                       height: "48px",
                       borderRadius: "12px",
-                      background: branding.logoBg,
-                      color: branding.accentColor,
+                      background: "var(--bg)",
+                      color: "var(--text)",
+                      border: "1px solid var(--line)",
                       display: "grid",
                       placeItems: "center",
                       fontSize: "16px",
@@ -283,8 +245,7 @@ export function Opportunities({
                         onClick={() => onViewDrive(drive)}
                         style={{
                           width: "100%",
-                          justifyContent: "center",
-                          background: `linear-gradient(135deg, ${branding.accentColor}, var(--secondary))`
+                          justifyContent: "center"
                         }}
                       >
                         View & Apply <ArrowUpRight size={12} />

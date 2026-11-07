@@ -74,10 +74,10 @@ export function Analytics({
         copy="Placement rate, packages, active companies, and branch readiness."
       />
       <div className="analytics-stats" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "16px", marginBottom: "24px" }}>
-        <Stat icon={<Users />} value={String(dashboard?.students ?? 0)} label="Students" sub="Seeded profiles" tone="violet" trend="▲ +15%" />
-        <Stat icon={<Building2 />} value={String(dashboard?.companies ?? 0)} label="Companies" sub="From report" tone="mint" trend="Live" />
-        <Stat icon={<GraduationCap />} value={`${dashboard?.placementRate ?? 0}%`} label="Placement rate" sub="Selected/student" tone="gold" trend="▲ +2.4%" />
-        <Stat icon={<BriefcaseBusiness />} value={`Rs ${Number(dashboard?.averagePackage ?? 0).toFixed(1)}L`} label="Avg package" sub={`High Rs ${Number(dashboard?.highestPackage ?? 0).toFixed(1)}L`} tone="blue" trend="▲ +0.5L" />
+        <Stat icon={<Users />} value={String(dashboard?.students ?? 0)} label="Students" sub="Registered profiles" tone="violet" />
+        <Stat icon={<Building2 />} value={String(dashboard?.companies ?? 0)} label="Companies" sub="Hiring partners" tone="mint" />
+        <Stat icon={<GraduationCap />} value={`${dashboard?.placementRate ?? 0}%`} label="Placement rate" sub="Selected/student" tone="gold" />
+        <Stat icon={<BriefcaseBusiness />} value={`Rs ${Number(dashboard?.averagePackage ?? 0).toFixed(1)}L`} label="Avg package" sub={`High Rs ${Number(dashboard?.highestPackage ?? 0).toFixed(1)}L`} tone="blue" />
       </div>
 
       <div className="interview-tab-row" style={{ marginBottom: "20px", display: "flex", gap: "8px", borderBottom: "1px solid var(--line)", paddingBottom: "1px" }}>
