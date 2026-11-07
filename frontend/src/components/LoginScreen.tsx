@@ -82,7 +82,9 @@ export function LoginScreen({ loading, onGoogleCredential }: {
             <h1>Your placement season, <mark>organised.</mark></h1>
             <p>Track applications, practise aptitude and interviews, and get your resume reviewed in one place.</p>
           </div>
-          <span className="auth-foot">Trusted by engineering colleges</span>
+          <span className="auth-foot">
+            Trusted by engineering colleges · <a href="/privacy">Privacy</a> · <a href="/terms">Terms</a>
+          </span>
         </section>
 
         <section className="auth-card">
