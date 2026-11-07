@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import type { ElementType, ReactNode } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import {
-  CircleUserRound, Command, LayoutDashboard, Loader2, LogOut, Menu,
+  CircleUserRound, LayoutDashboard, Loader2, LogOut, Menu,
   RotateCw, Search, X, BriefcaseBusiness, Building2, FileScan, BookOpenCheck,
   Sparkles, Gauge, Users, Target, Download, Plus, CheckCircle2, ArrowUpRight,
   Sun, Moon, Upload, Send, CalendarDays, Trophy, Share2, Trash2, ChevronDown, ClipboardList
@@ -79,6 +79,18 @@ const NAV_META: Record<View, { blurb: string; tone: string }> = {
   "Export Center": { blurb: "Download reports and records.", tone: "sun" },
   Profile: { blurb: "Your details and account.", tone: "mint" },
 };
+
+/** Top-left brand: KKWagh society logo beside the PlaceTrack wordmark. */
+function BrandLogo() {
+  return (
+    <div className="brand brand-logo">
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src="/brand/kkw-society.png" alt="Karmaveer Kakasaheb Wagh Education Society" className="brand-society" width={68} height={40} />
+      <span className="brand-divider" aria-hidden="true" />
+      <span className="brand-word">Place<mark>Track</mark></span>
+    </div>
+  );
+}
 
 function readStorage(key: string) {
   try {
@@ -331,7 +343,7 @@ export function Dashboard() {
         <AnimatePresence>{notice && <motion.div className="toast" initial={{ y: -30, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: -30, opacity: 0 }}>{notice}</motion.div>}</AnimatePresence>
         <section className="workspace" style={{ maxWidth: 960, margin: "0 auto", padding: "24px 16px 60px" }}>
           <header style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-            <div className="brand"><div className="brand-mark"><Command size={20} /></div><span>PlaceTrack <b>AI</b></span></div>
+            <BrandLogo />
             <button className="secondary-button" onClick={logout}><LogOut size={16} /> Logout</button>
           </header>
           <PageTitle eyebrow="Welcome" title="Complete your profile to continue." copy="Choose your department and enter your CGPA and graduation year. You can change these later only through your Training & Placement Coordinator." />
@@ -351,7 +363,7 @@ export function Dashboard() {
       <AnimatePresence>{notice && <motion.div className="toast" initial={{ y: -30, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: -30, opacity: 0 }}>{notice}</motion.div>}</AnimatePresence>
       <aside className={menuOpen ? "sidebar open" : "sidebar"}>
         <button className="mobile-close" onClick={() => setMenuOpen(false)}><X /></button>
-        <div className="brand"><div className="brand-mark"><Command size={20} /></div><span>PlaceTrack <b>AI</b></span></div>
+        <BrandLogo />
         <div className="profile-card">
           <div className="avatar">{initials(name)}</div>
           <div><strong>{name}</strong><span>{role} {user.student ? `· ${user.student.branch}` : ""}</span></div>
