@@ -111,8 +111,8 @@ const server = httpServer.listen(port, async () => {
     console.log("Database connection established.");
     initDeadlineReminderJob();
     const userCount = await prisma.user.count();
-    if (userCount === 0) {
-      console.log("Database is empty. Initiating database auto-seed...");
+    if (userCount === 0 && process.env.AUTO_SEED === "true") {
+      console.log("Database is empty and AUTO_SEED=true. Initiating database auto-seed...");
       const { fork } = await import("child_process");
       const path = await import("path");
       const seedPath = path.resolve(process.cwd(), "dist/prisma/seed.js");
@@ -126,7 +126,7 @@ const server = httpServer.listen(port, async () => {
         }
       });
     } else {
-      console.log(`Database ready — ${userCount} users found. Skipping auto-seed.`);
+      console.log(`Database ready — ${userCount} users found. Auto-seed skipped.`);
     }
   } catch (error) {
     console.error("Failed to connect to database:", error);

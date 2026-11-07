@@ -69,7 +69,7 @@ export function DriveCreator({
           package: Number(form.package),
           location: form.location,
           jobType: "Full-time",
-          description: "Campus hiring drive created from coordinator dashboard.",
+          description: "Campus hiring drive created from the TPC dashboard.",
           minCgpa: Number(form.minCgpa),
           allowedBranches: allowedBranches,
           maxBacklogs: 1,
@@ -114,7 +114,7 @@ export function DriveCreator({
   return (
     <>
       <PageTitle
-        eyebrow="Coordinator tools"
+        eyebrow="Training & Placement tools"
         title="Create a new placement drive."
         copy="This posts directly to the backend and appears for eligible students."
       />

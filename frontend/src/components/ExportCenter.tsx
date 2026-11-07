@@ -257,7 +257,7 @@ export default function ExportCenter({ token, role, flash }: ExportCenterProps) 
   const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
   const [errorMsg, setErrorMsg] = useState("");
 
-  const isCoordinator = role === "COORDINATOR" || role === "ADMIN";
+  const isCoordinator = role === "TPC" || role === "ADMIN";
 
   const availableReports = isCoordinator
     ? REPORT_CARDS
@@ -452,7 +452,7 @@ export default function ExportCenter({ token, role, flash }: ExportCenterProps) 
           }}
         >
           <Sparkles size={15} />
-          Some report types are restricted to Coordinators and Admins. Contact your coordinator to request a full export.
+          Some report types are restricted to Training & Placement Coordinators and Admins. Contact your TPC to request a full export.
         </div>
       )}
     </div>

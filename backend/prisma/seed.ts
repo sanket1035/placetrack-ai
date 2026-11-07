@@ -1,6 +1,5 @@
 import "dotenv/config";
 import { ApplicationStatus, DriveStatus, PrismaClient, UserRole } from "@prisma/client";
-import bcrypt from "bcryptjs";
 
 const prisma = new PrismaClient();
 const branches = ["Computer Engineering", "Information Technology", "AI & Data Science", "E&TC", "Electrical", "Mechanical", "Civil"];
@@ -150,20 +149,21 @@ async function reset() {
 }
 
 async function main() {
+  if (process.env.NODE_ENV === "production" && process.env.ALLOW_DEMO_SEED !== "true") {
+    throw new Error("Refusing to wipe and seed demo data in production. Set ALLOW_DEMO_SEED=true to override.");
+  }
   await reset();
-  const passwordHash = await bcrypt.hash("Demo@123", 10);
-  await prisma.user.create({
-    data: { email: "coordinator@placetrack.ai", passwordHash, role: UserRole.COORDINATOR, coordinator: { create: { department: "Training & Placement", phone: "+91 9000000000" } } }
-  });
-  await prisma.user.create({
-    data: { email: "admin@placetrack.ai", passwordHash, role: UserRole.ADMIN }
-  });
+  // Sign-in is Google-only. Seeded students are demo records (nobody can sign in as them);
+  // real users are created on first Google sign-in, TPCs are invited by an admin.
+  const adminEmail = (process.env.ADMIN_EMAILS ?? "").split(",")[0]?.trim().toLowerCase();
+  if (adminEmail) {
+    await prisma.user.create({ data: { email: adminEmail, name: "Admin", role: UserRole.ADMIN } });
+  }
 
   const userDataList = Array.from({ length: 150 }, (_, index) => {
     const branch = branches[index % branches.length];
     return {
       email: index === 0 ? "student@placetrack.ai" : `student${index + 1}@placetrack.ai`,
-      passwordHash,
       role: UserRole.STUDENT,
       branch,
       cgpa: index === 0 ? 8.6 : Number((6.4 + ((index * 7) % 31) / 10).toFixed(2)),

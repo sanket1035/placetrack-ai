@@ -102,7 +102,7 @@ export function Overview({
                 {role} PORTAL
               </span>
               <h1 style={{ margin: "4px 0 0", fontSize: "28px", fontWeight: 800, letterSpacing: "-0.025em", color: "var(--welcome-text)" }}>
-                Good morning, {name}.
+                Good morning, <mark className="hl">{name}</mark>.
               </h1>
               <p style={{ margin: "4px 0 0", color: "var(--welcome-muted)", fontSize: "13px" }}>
                 Welcome back to your workspace. Here is your campus hiring status.
@@ -235,7 +235,7 @@ export function Overview({
             <span>{new Date().toLocaleString("en", { month: "short" }).toUpperCase()}</span>
           </div>
           <div className="event-info">
-            <span>{role === "STUDENT" ? "Student" : "Coordinator"}</span>
+            <span>{role === "STUDENT" ? "Student" : "Training & Placement Coordinator"}</span>
             <h4>{role === "STUDENT" ? "Apply to a matching drive" : "Review applications and schedule rounds"}</h4>
             <p>Use live modules from the sidebar.</p>
           </div>

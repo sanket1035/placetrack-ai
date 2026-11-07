@@ -9,7 +9,7 @@ import {
   Sparkles, Gauge, Users, Target, Download, Plus, CheckCircle2, ArrowUpRight,
   Sun, Moon, Upload, Send, CalendarDays, Trophy, Share2, Trash2
 } from "lucide-react";
-import { api, demoAccounts, type LoginResponse, type Role, type SessionUser } from "@/lib/api";
+import { api, type LoginResponse, type Role, type SessionUser } from "@/lib/api";
 import { getTheme, setTheme } from "@/lib/theme";
 import { ThemeToggle } from "./ui/ThemeToggle";
 import { NotificationBell } from "./NotificationBell";
@@ -27,6 +27,8 @@ import {
 } from "../lib/queries";
 import SkillsSelector from "./SkillsSelector";
 
+import { LoginScreen } from "./LoginScreen";
+import { HighlightedTitle } from "./ui/Highlight";
 import { Overview } from "./OverviewView";
 import { Applications } from "./ApplicationsView";
 import { Opportunities } from "./OpportunitiesView";
@@ -58,177 +60,6 @@ const navIcons: Record<View, ElementType> = {
   Practice: Target,
   "Export Center": Download,
 };
-
-const MOCK_DRIVES: Drive[] = [
-  {
-    id: "drv-1",
-    company: { name: "NVIDIA", website: "https://nvidia.com", description: "GPU and AI computing leader." },
-    role: "GPU Systems Software Engineer",
-    package: 25.0,
-    location: "Bengaluru",
-    jobType: "Full-time",
-    deadline: new Date(Date.now() + 5 * 86400000).toISOString(),
-    allowedBranches: ["Computer Engineering", "Information Technology", "AI & Data Science", "E&TC"],
-    minCgpa: 8.5,
-    alreadyApplied: false
-  },
-  {
-    id: "drv-2",
-    company: { name: "TCS", website: "https://tcs.com", description: "Global IT services and consulting provider." },
-    role: "Software Engineer",
-    package: 7.0,
-    location: "Pune",
-    jobType: "Full-time",
-    deadline: new Date(Date.now() + 10 * 86400000).toISOString(),
-    allowedBranches: ["Computer Engineering", "Information Technology", "AI & Data Science", "E&TC", "Electrical", "Mechanical", "Civil"],
-    minCgpa: 6.5,
-    alreadyApplied: true
-  },
-  {
-    id: "drv-3",
-    company: { name: "Persistent Systems", website: "https://persistent.com", description: "Product engineering and digital transformation company." },
-    role: "Product Engineer",
-    package: 9.5,
-    location: "Nashik",
-    jobType: "Full-time",
-    deadline: new Date(Date.now() + 12 * 86400000).toISOString(),
-    allowedBranches: ["Computer Engineering", "Information Technology", "AI & Data Science"],
-    minCgpa: 7.0,
-    alreadyApplied: false
-  },
-  {
-    id: "drv-4",
-    company: { name: "Crompton Greaves", website: "https://cromptongreaves.com", description: "Consumer electrical goods and engineering equipment maker." },
-    role: "Graduate Engineer Trainee",
-    package: 5.5,
-    location: "Mumbai",
-    jobType: "Full-time",
-    deadline: new Date(Date.now() + 15 * 86400000).toISOString(),
-    allowedBranches: ["Electrical", "Mechanical"],
-    minCgpa: 6.0,
-    alreadyApplied: false
-  }
-];
-
-const MOCK_APPLICATIONS: Application[] = [
-  {
-    id: "app-1",
-    status: "TECHNICAL_ROUND",
-    updatedAt: new Date(Date.now() - 2 * 86400000).toISOString(),
-    timeline: [
-      { status: "APPLIED", at: new Date(Date.now() - 5 * 86400000).toISOString(), note: "Applied for Nvidia GPU Systems role." },
-      { status: "SHORTLISTED", at: new Date(Date.now() - 4 * 86400000).toISOString(), note: "Profile shortlisted by HR." },
-      { status: "APTITUDE_CLEARED", at: new Date(Date.now() - 3 * 86400000).toISOString(), note: "Cleared online assessment with 92% score." },
-      { status: "TECHNICAL_ROUND", at: new Date(Date.now() - 2 * 86400000).toISOString(), note: "Technical interview scheduled." }
-    ],
-    drive: MOCK_DRIVES[0]
-  },
-  {
-    id: "app-2",
-    status: "APPLIED",
-    updatedAt: new Date(Date.now() - 1 * 86400000).toISOString(),
-    timeline: [
-      { status: "APPLIED", at: new Date(Date.now() - 1 * 86400000).toISOString(), note: "Application submitted." }
-    ],
-    drive: MOCK_DRIVES[1]
-  }
-];
-
-const MOCK_TESTS: TestSummary[] = [
-  { id: "test-1", title: "Placement Aptitude Mock 1", duration: 30, _count: { questions: 10, results: 45 } },
-  { id: "test-2", title: "Placement Aptitude Mock 2", duration: 30, _count: { questions: 10, results: 32 } },
-  { id: "test-3", title: "Technical MCQs Mock", duration: 25, _count: { questions: 15, results: 88 } }
-];
-
-const MOCK_DASHBOARD: DashboardData = {
-  readiness: { score: 82, reasons: ["Keep profiles updated before every drive.", "Add more technical skills to improve matching."] },
-  stats: { applications: 2, interviews: 1, offers: 0, companies: 4 },
-  placementRate: 85,
-  activeDrives: 4,
-  companies: 4,
-  students: 500,
-  averagePackage: 6.2,
-  highestPackage: 25.0,
-  branchPerformance: [
-    { branch: "Computer Engineering", students: 120, readiness: 85 },
-    { branch: "Information Technology", students: 100, readiness: 78 },
-    { branch: "AI & Data Science", students: 60, readiness: 82 },
-    { branch: "E&TC", students: 90, readiness: 72 },
-    { branch: "Electrical", students: 50, readiness: 65 },
-    { branch: "Mechanical", students: 60, readiness: 58 },
-    { branch: "Civil", students: 40, readiness: 52 }
-  ]
-};
-
-const MOCK_USERS: SessionUser[] = [
-  {
-    id: "stud-1",
-    email: "student@placetrack.ai",
-    role: "STUDENT",
-    student: {
-      id: "stud-profile-1",
-      name: "Rahul Sharma",
-      branch: "Computer Engineering",
-      cgpa: 8.2,
-      backlogs: 0,
-      graduationYear: 2027,
-      skills: ["Java", "Python", "SQL", "Communication"]
-    }
-  },
-  {
-    id: "stud-2",
-    email: "priya.patil@placetrack.ai",
-    role: "STUDENT",
-    student: {
-      id: "stud-profile-2",
-      name: "Priya Patil",
-      branch: "Information Technology",
-      cgpa: 9.1,
-      backlogs: 0,
-      graduationYear: 2027,
-      skills: ["React", "TypeScript", "Node.js", "Docker"]
-    }
-  },
-  {
-    id: "stud-3",
-    email: "amit.verma@placetrack.ai",
-    role: "STUDENT",
-    student: {
-      id: "stud-profile-3",
-      name: "Amit Verma",
-      branch: "E&TC",
-      cgpa: 6.8,
-      backlogs: 1,
-      graduationYear: 2027,
-      skills: ["C++", "Embedded C", "SQL", "Problem Solving"]
-    }
-  },
-  {
-    id: "coord-1",
-    email: "coordinator@placetrack.ai",
-    role: "COORDINATOR",
-    coordinator: {
-      id: "coord-profile-1",
-      department: "Computer Engineering",
-      phone: "+91 98765 43210"
-    }
-  },
-  {
-    id: "coord-2",
-    email: "prof.deshmukh@placetrack.ai",
-    role: "COORDINATOR",
-    coordinator: {
-      id: "coord-profile-2",
-      department: "Information Technology",
-      phone: "+91 99988 87766"
-    }
-  },
-  {
-    id: "admin-1",
-    email: "admin@placetrack.ai",
-    role: "ADMIN"
-  }
-];
 
 function readStorage(key: string) {
   try {
@@ -361,126 +192,28 @@ export function Dashboard() {
       setTests(testRows);
 
       if (isAdmin) {
-        try {
-          const userRows = await api<SessionUser[]>("/api/auth/users", activeToken);
-          setUsersList(userRows);
-        } catch (e) {
-          console.warn("Backend users api failed, falling back to mock users:", e);
-          setUsersList(MOCK_USERS);
-        }
+        const userRows = await api<SessionUser[]>("/api/auth/users", activeToken);
+        setUsersList(userRows);
       }
     } catch (error) {
-      console.warn("Backend API not reachable. Using offline seed data:", error);
-      setDashboard(MOCK_DASHBOARD);
-      setDrives(MOCK_DRIVES);
-      setApplications(MOCK_APPLICATIONS);
-      setTests(MOCK_TESTS);
-
-      const isAdmin = user?.role === "ADMIN" || (typeof window !== "undefined" && (() => {
-        try {
-          const storedUser = JSON.parse(window.localStorage.getItem("placetrack-user") || "{}");
-          return storedUser.role === "ADMIN";
-        } catch { return false; }
-      })());
-      if (isAdmin) {
-        setUsersList(MOCK_USERS);
-      }
-    } finally {
+      flash(error instanceof Error ? error.message : "Could not load data. Check your connection.");
+        } finally {
       setLoading(false);
     }
   };
 
-  const handleLogin = async (email: string, password: string) => {
+  const handleGoogleCredential = async (credential: string) => {
     setLoading(true);
     try {
-      const session = await api<LoginResponse>("/api/auth/login", null, {
+      const session = await api<LoginResponse>("/api/auth/google", null, {
         method: "POST",
-        body: JSON.stringify({ email, password })
+        body: JSON.stringify({ credential })
       });
       setToken(session.token);
       setUser(session.user);
       writeStorage("placetrack-token", session.token);
       writeStorage("placetrack-user", JSON.stringify(session.user));
-      flash(`Logged in as ${session.user.role.toLowerCase()}`);
-    } catch (error) {
-      // Offline fallback: check if credentials match demo accounts
-      const lowercaseEmail = email.toLowerCase();
-      const matchedDemo = demoAccounts.find(
-        (d) => d.email.toLowerCase() === lowercaseEmail && d.password === password
-      );
-      if (matchedDemo) {
-        const mockUser: SessionUser = {
-          id: matchedDemo.label.toLowerCase() + "_mock_id",
-          email: matchedDemo.email,
-          role: matchedDemo.label.toUpperCase() as Role,
-          student: matchedDemo.label === "Student" ? {
-            id: "student_mock_id",
-            name: "Rahul Sharma",
-            branch: "Computer Engineering",
-            cgpa: 8.2,
-            backlogs: 0,
-            graduationYear: 2027,
-            skills: ["Java", "Python", "SQL", "Communication"]
-          } : null,
-          coordinator: matchedDemo.label === "Coordinator" ? {
-            id: "coordinator_mock_id",
-            department: "Computer Engineering"
-          } : null
-        };
-        const mockToken = "mock_jwt_token_for_" + matchedDemo.label.toLowerCase();
-        setToken(mockToken);
-        setUser(mockUser);
-        writeStorage("placetrack-token", mockToken);
-        writeStorage("placetrack-user", JSON.stringify(mockUser));
-        flash(`Logged in as ${mockUser.role.toLowerCase()} (offline mode)`);
-      } else {
-        const err = new Error("Invalid email or password");
-        flash(err.message);
-        throw err;
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleSignup = async (input: { name: string; email: string; password: string; branch: string; cgpa: number; skills: string[]; role: "STUDENT" | "COORDINATOR" }) => {
-    setLoading(true);
-    try {
-      const session = await api<LoginResponse>("/api/auth/signup", null, {
-        method: "POST",
-        body: JSON.stringify({ ...input, graduationYear: 2027, backlogs: 0 })
-      });
-      setToken(session.token);
-      setUser(session.user);
-      writeStorage("placetrack-token", session.token);
-      writeStorage("placetrack-user", JSON.stringify(session.user));
-      flash(`Account created as ${input.role.toLowerCase()} — logged in`);
-    } catch (error) {
-      // Offline fallback: simulate successful signup
-      const mockUser: SessionUser = {
-        id: "user_" + Math.random().toString(36).substring(2, 9),
-        email: input.email.toLowerCase(),
-        role: input.role,
-        student: input.role === "STUDENT" ? {
-          id: "student_" + Math.random().toString(36).substring(2, 9),
-          name: input.name,
-          branch: input.branch,
-          cgpa: input.cgpa,
-          backlogs: 0,
-          graduationYear: 2027,
-          skills: input.skills
-        } : null,
-        coordinator: input.role === "COORDINATOR" ? {
-          id: "coord_" + Math.random().toString(36).substring(2, 9),
-          department: input.branch
-        } : null
-      };
-      const mockToken = "mock_jwt_token_" + Math.random().toString(36).substring(2, 9);
-      setToken(mockToken);
-      setUser(mockUser);
-      writeStorage("placetrack-token", mockToken);
-      writeStorage("placetrack-user", JSON.stringify(mockUser));
-      flash(`Account created as ${input.role.toLowerCase()} (offline mode)`);
+      if (session.user.role === "STUDENT" && session.user.student && !session.user.student.onboarded) setView("Profile");
     } finally {
       setLoading(false);
     }
@@ -547,10 +280,10 @@ export function Dashboard() {
   }, [tests, searchQuery]);
 
   if (!user || !token) {
-    return <LoginScreen dark={dark} loading={loading} onToggleTheme={() => { const next = !dark; setDark(next); setTheme(next ? "dark" : "light"); }} onLogin={handleLogin} onSignup={handleSignup} />;
+    return <LoginScreen dark={dark} loading={loading} onToggleTheme={() => { const next = !dark; setDark(next); setTheme(next ? "dark" : "light"); }} onGoogleCredential={handleGoogleCredential} />;
   }
 
-  const name = user.student?.name ?? user.coordinator?.department ?? (role === "ADMIN" ? "Admin Console" : user.email);
+  const name = user.student?.name ?? user.name ?? user.coordinator?.department ?? (role === "ADMIN" ? "Admin Console" : user.email);
 
   return (
     <main className={dark ? "app dark" : "app light"}>
@@ -790,7 +523,7 @@ function DriveDetailsModal({ drive, role, token, onClose, onApplied, flash }: {
             </button>
           ) : (
             <div style={{ display: "flex", width: "100%", justifyContent: "space-between", alignItems: "center", gap: "12px" }}>
-              <p className="helper-text" style={{ margin: 0 }}>Coordinator / admin accounts can monitor or manage this drive.</p>
+              <p className="helper-text" style={{ margin: 0 }}>TPC / admin accounts can monitor or manage this drive.</p>
               <button
                 type="button"
                 className="ghost-button"
@@ -870,7 +603,7 @@ function ProfileModal({ user, token, onClose, onSaved, flash }: {
           <div><span className="card-kicker">Student profile</span><h3>Edit readiness inputs</h3></div>
           <button onClick={onClose}><X size={16} /></button>
         </div>
-        {!student && <p className="section-copy">Coordinator/admin profile editing is not needed here. Student records can be managed from applications and analytics.</p>}
+        {!student && <p className="section-copy">TPC/admin profile editing is not needed here. Student records can be managed from applications and analytics.</p>}
         {student && <>
           <p className="section-copy">Update CGPA, branch, skills, or backlog count whenever your profile improves. Dashboard readiness will refresh after saving.</p>
           <div className="profile-form">
@@ -1004,7 +737,7 @@ function ProfileEditor({ user, token, onSaved, flash, dashboard }: {
   };
 
   if (!student) {
-    return <section className="card form-card"><EmptyState title="No student profile" copy="Coordinator and admin accounts use analytics and application tools instead." /></section>;
+    return <section className="card form-card"><EmptyState title="No student profile" copy="TPC and admin accounts use analytics and application tools instead." /></section>;
   }
 
   return (
@@ -1084,211 +817,6 @@ function ProfileEditor({ user, token, onSaved, flash, dashboard }: {
   );
 }
 
-function LoginScreen({ dark, loading, onToggleTheme, onLogin, onSignup }: {
-  dark: boolean;
-  loading: boolean;
-  onToggleTheme: () => void;
-  onLogin: (email: string, password: string) => void | Promise<void>;
-  onSignup: (input: { name: string; email: string; password: string; branch: string; cgpa: number; skills: string[]; role: "STUDENT" | "COORDINATOR" }) => void | Promise<void>;
-}) {
-  const [mode, setMode] = useState<"signin" | "signup">("signin");
-  const [role, setRole] = useState<"STUDENT" | "COORDINATOR">("STUDENT");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [name, setName] = useState("");
-  const [branch, setBranch] = useState("Computer Engineering");
-  const [cgpa, setCgpa] = useState("7.8");
-  const [selectedSkills, setSelectedSkills] = useState<string[]>(["Java", "Python", "SQL", "Communication"]);
-  const [errorMsg, setErrorMsg] = useState("");
-
-  useEffect(() => {
-    setEmail("");
-    setPassword("");
-    setName("");
-    setCgpa("7.8");
-    setRole("STUDENT");
-    setErrorMsg("");
-  }, [mode]);
-
-  const submitAuth = async () => {
-    setErrorMsg("");
-    try {
-      if (mode === "signin") {
-        await onLogin(email, password);
-      } else {
-        await onSignup({ name, email, password, branch, cgpa: Number(cgpa), skills: selectedSkills, role });
-      }
-    } catch (error: any) {
-      console.error("Authentication error caught:", error);
-      const msg = error?.message || error?.error || (typeof error === "string" ? error : "Authentication failed");
-      setErrorMsg(msg);
-    }
-  };
-
-  return (
-    <main className={dark ? "app dark login-app" : "app light login-app"}>
-      {/* Left panel: dynamic branding & info */}
-      <div className="login-brand-panel" style={{
-        display: "flex",
-        flexDirection: "column",
-        justifyContent: "space-between",
-        padding: "48px",
-        background: "linear-gradient(135deg, var(--bg) 0%, var(--panel-2) 50%, var(--bg) 100%)",
-        borderRight: "1px solid var(--line)",
-        position: "relative",
-        overflow: "hidden"
-      }}>
-        {/* Glow decoration */}
-        <div style={{
-          position: "absolute", top: "10%", left: "10%", width: "400px", height: "400px",
-          background: "radial-gradient(circle, var(--focus) 0%, transparent 70%)",
-          pointerEvents: "none"
-        }} />
-        
-        <div className="brand" style={{ zIndex: 1, padding: 0 }}>
-          <div className="brand-mark"><Command size={20} /></div>
-          <span>PlaceTrack <b style={{ color: "var(--secondary)" }}>AI</b></span>
-        </div>
-        
-        <div style={{ maxWidth: "440px", zIndex: 1, margin: "auto 0" }}>
-          <span className="eyebrow" style={{ color: "var(--secondary)", letterSpacing: "0.15em", display: "inline-block" }}>
-            Campus Placement Command Center
-          </span>
-          <h2 style={{ fontSize: "36px", fontWeight: 800, color: "var(--text)", marginTop: "12px", lineHeight: 1.15, letterSpacing: "-0.03em" }}>
-            Step into your future with intelligence.
-          </h2>
-          <p style={{ color: "var(--muted)", fontSize: "14px", marginTop: "14px", lineHeight: 1.6 }}>
-            Track real-time campus recruitment drives, analyze your placement readiness score, build ATS-optimized resumes, and practice with our smart AI mock coaches.
-          </p>
-        </div>
-        
-        <div style={{ zIndex: 1 }}>
-          <span style={{ fontSize: "11px", color: "var(--muted)", letterSpacing: "0.05em", textTransform: "uppercase" }}>
-            College Campus Placement Portal · 2026
-          </span>
-        </div>
-      </div>
-
-      {/* Right panel: auth card wrapper */}
-      <div className="login-form-container" style={{
-        display: "grid",
-        placeItems: "center",
-        padding: "40px 24px",
-        width: "100%",
-        overflowY: "auto"
-      }}>
-        <div className="login-card card" style={{
-          border: 0,
-          background: "transparent",
-          boxShadow: "none",
-          width: "min(400px, 100%)",
-          padding: 0
-        }}>
-          {/* Logo visible only on mobile/tablet */}
-          <div className="brand mobile-only-logo" style={{ marginBottom: "20px" }}>
-            <div className="brand-mark"><Command size={20} /></div>
-            <span>PlaceTrack <b style={{ color: "var(--secondary)" }}>AI</b></span>
-          </div>
-
-          <span className="eyebrow">Authentication Portal</span>
-          <h1 style={{ fontSize: "28px", fontWeight: 800, margin: "6px 0 10px" }}>
-            {mode === "signin" ? "Login to your account" : "Create your account"}
-          </h1>
-          <p className="section-copy" style={{ fontSize: "12px", color: "var(--muted)", margin: "0 0 16px" }}>
-            {mode === "signin" ? "Enter your email and password to access your placement dashboard." : "Choose your role and fill in your details to get started."}
-          </p>
-          
-          {errorMsg && (
-            <div className="login-error-message">
-              ⚠️ {errorMsg}
-            </div>
-          )}
-
-          <div className="auth-tabs">
-            <button type="button" className={mode === "signin" ? "active" : ""} onClick={() => setMode("signin")}>Sign in</button>
-            <button type="button" className={mode === "signup" ? "active" : ""} onClick={() => setMode("signup")}>Sign up</button>
-          </div>
-          
-          <form onSubmit={(e) => { e.preventDefault(); submitAuth(); }} style={{ display: "grid", gap: "16px", marginTop: "16px" }}>
-            {mode === "signup" && <>
-              <div>
-                <label style={{ display: "block", marginBottom: "6px" }}>I am a</label>
-                <div className="role-selector">
-                  <button
-                    type="button"
-                    className={role === "STUDENT" ? "role-btn active" : "role-btn"}
-                    onClick={() => setRole("STUDENT")}
-                  >
-                    🎓 Student
-                  </button>
-                  <button
-                    type="button"
-                    className={role === "COORDINATOR" ? "role-btn active" : "role-btn"}
-                    onClick={() => setRole("COORDINATOR")}
-                  >
-                    🏢 Coordinator
-                  </button>
-                </div>
-              </div>
-              <label>Name<input value={name} placeholder="Your full name" onChange={(e) => { setName(e.target.value); setErrorMsg(""); }} /></label>
-              {role === "STUDENT" && <>
-                <label>Branch
-                  <select value={branch} onChange={(e) => { setBranch(e.target.value); setErrorMsg(""); }}>
-                    {AVAILABLE_DEPARTMENTS.map((dept) => <option key={dept} value={dept}>{dept}</option>)}
-                  </select>
-                </label>
-                <label>CGPA<input value={cgpa} placeholder="e.g. 8.2" onChange={(e) => { setCgpa(e.target.value); setErrorMsg(""); }} /></label>
-                <SkillsSelector selected={selectedSkills} onChange={(skills) => { setSelectedSkills(skills); setErrorMsg(""); }} />
-              </>}
-              {role === "COORDINATOR" && <>
-                <label>Department
-                  <select value={branch} onChange={(e) => { setBranch(e.target.value); setErrorMsg(""); }}>
-                    {AVAILABLE_DEPARTMENTS.map((dept) => <option key={dept} value={dept}>{dept}</option>)}
-                  </select>
-                </label>
-              </>}
-            </>}
-            
-            <label>Email<input value={email} placeholder="your@email.com" autoComplete="off" onChange={(e) => { setEmail(e.target.value); setErrorMsg(""); }} /></label>
-            <label>Password<input type="text" className="no-autofill-password" value={password} placeholder="Password" autoComplete="off" onChange={(e) => { setPassword(e.target.value); setErrorMsg(""); }} /></label>
-            
-            <button className="primary-button" disabled={loading} type="submit" style={{ padding: "12px 14px", fontSize: "12px", width: "100%", cursor: "pointer" }}>
-              {loading ? <Loader2 className="spin" size={16} /> : <ArrowUpRight size={16} />} {mode === "signin" ? "Sign in" : "Create account"}
-            </button>
-            <button className="ghost-button" type="button" onClick={onToggleTheme} style={{ width: "100%", justifyContent: "center" }}>
-              {dark ? <Sun size={16} /> : <Moon size={16} />} Toggle theme
-            </button>
-          </form>
-
-          {/* Quick Demo Credential Pills */}
-          <div style={{ marginTop: "24px", paddingTop: "20px", borderTop: "1px solid var(--line)" }}>
-            <span style={{ display: "block", fontSize: "10px", fontWeight: 850, color: "var(--muted)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: "10px" }}>
-              Quick Demo Accounts
-            </span>
-            <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
-              {demoAccounts.map((acc) => (
-                <button
-                  key={acc.label}
-                  type="button"
-                  className="secondary-button"
-                  style={{ padding: "6px 12px", fontSize: "11px", borderRadius: "8px", cursor: "pointer" }}
-                  onClick={() => {
-                    setEmail(acc.email);
-                    setPassword(acc.password);
-                    setMode("signin");
-                    setErrorMsg("");
-                  }}
-                >
-                  👤 {acc.label}
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
-    </main>
-  );
-}
 function ResumeAI({ token, flash }: { token: string; flash: (message: string) => void }) {
   const [result, setResult] = useState<Record<string, any> | null>(null);
   const [loading, setLoading] = useState(false);
@@ -1446,11 +974,7 @@ function Aptitude({ token, role, tests, flash }: { token: string; role: Role; te
       const result = await api<Record<string, unknown>>(`/api/tests/${active.id}/submit`, token, { method: "POST", body: JSON.stringify({ answers }) });
       flash(`Submitted. Accuracy ${result.accuracy}%`);
     } catch (error) {
-      console.warn("Backend API not reachable for test submission. Using client-side logic.");
-      const totalQuestions = questions.length || 10;
-      const correctAnswers = Object.keys(answers).length;
-      const accuracy = Math.round((correctAnswers / totalQuestions) * 100) || 60;
-      flash(`Submitted (offline mode). Accuracy ${accuracy}%`);
+      flash(error instanceof Error ? error.message : "Could not submit the test. Try again.");
     }
   };
   const questions = (active?.questions as Array<{ id: string; section: string; questionText: string; options: string[] }> | undefined) ?? [];
@@ -1802,7 +1326,7 @@ function InterviewCoach({ token, flash }: { token: string; flash: (message: stri
 }
 
 function PageTitle({ eyebrow, title, copy }: { eyebrow: string; title: string; copy: string }) {
-  return <div className="page-title"><div><span>{eyebrow}</span><h1>{title}</h1><p>{copy}</p></div><div className="date-pill"><CalendarDays size={16} /> Placement season 2025-26</div></div>;
+  return <div className="page-title"><div><span>{eyebrow}</span><h1><HighlightedTitle text={title} /></h1><p>{copy}</p></div><div className="date-pill"><CalendarDays size={16} /> Placement season 2025-26</div></div>;
 }
 
 function Stat({ icon, value, label, sub, tone, trend }: { icon: ReactNode; value: string; label: string; sub: string; tone: string; trend?: string }) {

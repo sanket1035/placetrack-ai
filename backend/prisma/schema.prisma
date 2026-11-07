@@ -10,7 +10,7 @@ datasource db {
 
 enum UserRole {
   STUDENT
-  COORDINATOR
+  TPC // Training & Placement Coordinator (scoped to one department)
   ADMIN
 }
 
@@ -34,7 +34,10 @@ enum DriveStatus {
 model User {
   id            String        @id @default(cuid())
   email         String        @unique
-  passwordHash  String
+  name          String?
+  avatarUrl     String?
+  googleId      String?       @unique
+  lastLoginAt   DateTime?
   role          UserRole
   student       Student?
   coordinator   Coordinator?
@@ -63,6 +66,7 @@ model Student {
   projectsCount   Int           @default(0)
   internshipsCount Int          @default(0)
   emailEnabled    Boolean       @default(true)
+  onboarded       Boolean       @default(false)
   applications    Application[]
   testResults     TestResult[]
 
@@ -70,6 +74,7 @@ model Student {
   @@index([readinessScore])
 }
 
+/// Training & Placement Coordinator profile. `department` must equal Student.branch for the students they manage.
 model Coordinator {
   id          String @id @default(cuid())
   userId      String @unique

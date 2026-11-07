@@ -5,7 +5,7 @@ import { api } from "@/lib/api";
 import { initials, pretty } from "../lib/queries";
 import PageTitle from "./PageTitle";
 import { EmptyState } from "./OverviewView";
-import AddCoordinatorModal from "./AddCoordinatorModal";
+import InviteTpcModal from "./InviteTpcModal";
 import EditUserModal from "./EditUserModal";
 
 export function UsersManager({
@@ -20,8 +20,8 @@ export function UsersManager({
   setUsers: React.Dispatch<React.SetStateAction<SessionUser[]>>;
 }) {
   const [searchTerm, setSearchTerm] = useState("");
-  const [roleFilter, setRoleFilter] = useState<"ALL" | "STUDENT" | "COORDINATOR" | "ADMIN">("ALL");
-  const [showAddCoordinator, setShowAddCoordinator] = useState(false);
+  const [roleFilter, setRoleFilter] = useState<"ALL" | "STUDENT" | "TPC" | "ADMIN">("ALL");
+  const [showInviteTpc, setShowInviteTpc] = useState(false);
   const [editingUser, setEditingUser] = useState<SessionUser | null>(null);
   const [deletingId, setDeletingId] = useState("");
 
@@ -104,7 +104,7 @@ export function UsersManager({
 
   return (
     <>
-      <PageTitle eyebrow="System Administration" title="User Account Management" copy="Create coordinators, manage roles, edit user credentials and profiles." />
+      <PageTitle eyebrow="System Administration" title="User Account Management" copy="Invite Training & Placement Coordinators by department, manage roles and review accounts. Everyone signs in with Google." />
 
       <div className="users-manager-controls" style={{ display: "flex", gap: "12px", marginBottom: "20px", flexWrap: "wrap", alignItems: "center" }}>
         <div className="search" style={{ flex: 1, minWidth: "200px" }}>
@@ -122,11 +122,11 @@ export function UsersManager({
         >
           <option value="ALL">All Roles</option>
           <option value="STUDENT">Students</option>
-          <option value="COORDINATOR">Coordinators</option>
+          <option value="TPC">Training & Placement Coordinators</option>
           <option value="ADMIN">Admins</option>
         </select>
-        <button className="primary-button" onClick={() => setShowAddCoordinator(true)}>
-          <Plus size={16} /> Add Coordinator
+        <button className="primary-button" onClick={() => setShowInviteTpc(true)}>
+          <Plus size={16} /> Invite TPC
         </button>
         <input
           type="file"
@@ -147,7 +147,7 @@ export function UsersManager({
               <div className="avatar">{initials(u.student?.name ?? u.email)}</div>
               <div>
                 <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
-                  <strong style={{ fontSize: "15px" }}>{u.student?.name ?? (u.role === "COORDINATOR" ? "Faculty Coordinator" : u.role === "ADMIN" ? "Administrator" : u.email)}</strong>
+                  <strong style={{ fontSize: "15px" }}>{u.student?.name ?? (u.role === "TPC" ? "Training & Placement Coordinator" : u.role === "ADMIN" ? "Administrator" : u.email)}</strong>
                   <span className={`status-badge`} style={{ fontSize: "10px", padding: "2px 8px" }}>{pretty(u.role)}</span>
                 </div>
                 <p style={{ fontSize: "13px", color: "var(--muted)", margin: "4px 0 0" }}>{u.email}</p>
@@ -164,7 +164,7 @@ export function UsersManager({
                     )}
                   </div>
                 )}
-                {u.role === "COORDINATOR" && u.coordinator && (
+                {u.role === "TPC" && u.coordinator && (
                   <div style={{ display: "flex", gap: "12px", marginTop: "6px", fontSize: "12px", color: "var(--muted)" }}>
                     <span>Department: <b>{u.coordinator.department}</b></span>
                   </div>
@@ -180,16 +180,16 @@ export function UsersManager({
           </div>
         ))}
         {filteredUsers.length === 0 && (
-          <EmptyState title="No users found" copy="No student or coordinator accounts match your search filters." />
+          <EmptyState title="No users found" copy="No student or TPC accounts match your search filters." />
         )}
       </div>
 
-      {showAddCoordinator && (
-        <AddCoordinatorModal
+      {showInviteTpc && (
+        <InviteTpcModal
           token={token}
-          onClose={() => setShowAddCoordinator(false)}
-          onSaved={(newCoord) => {
-            setUsers((prev) => [...prev, newCoord]);
+          onClose={() => setShowInviteTpc(false)}
+          onSaved={(invited) => {
+            setUsers((prev) => [...prev, invited]);
           }}
           flash={flash}
         />
