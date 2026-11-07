@@ -390,6 +390,13 @@ export function Dashboard() {
 
         <AnimatePresence mode="wait">
           <motion.div className="content" key={view} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }} transition={{ duration: .22 }}>
+            {!dashboard && loading && (
+              <section className="card" style={{ display: "flex", alignItems: "center", gap: 12, padding: 24 }} role="status" aria-live="polite">
+                <Loader2 className="spin" size={20} />
+                <div><strong>Loading your workspace...</strong><p className="helper-text" style={{ margin: 0 }}>The server may need a few seconds to wake up after a quiet period.</p></div>
+              </section>
+            )}
+            <div hidden={!dashboard && loading}>
             {view === "Overview" && <Overview role={role} name={name} dashboard={dashboard} applications={filteredApplications} drives={filteredDrives} onNavigate={setView} loading={loading} />}
             {view === "Applications" && <Applications role={role} token={token} applications={filteredApplications} onRefresh={() => refreshAll()} flash={flash} loading={loading} />}
             {view === "Opportunities" && <Opportunities role={role} token={token} drives={filteredDrives} onRefresh={() => refreshAll()} onNavigate={setView} flash={flash} onViewDrive={setSelectedDrive} loading={loading} filterConditions={filterConditions} setFilterConditions={setFilterConditions} allDrives={drivesWithEligibility} />}
@@ -402,6 +409,7 @@ export function Dashboard() {
             {view === "Users" && <UsersManager token={token} flash={flash} users={usersList} setUsers={setUsersList} />}
             {view === "Practice" && <PracticeView token={token} flash={flash} />}
             {view === "Export Center" && <ExportCenter token={token} role={role} flash={flash} />}
+            </div>
           </motion.div>
         </AnimatePresence>
       </section>

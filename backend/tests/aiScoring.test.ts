@@ -2,6 +2,7 @@ import request from "supertest";
 import { app } from "../src/server.js";
 import { prisma } from "../src/lib/prisma.js";
 import { signToken } from "../src/middleware/auth.js";
+import { pdfItemsToText } from "../src/routes/ai.routes.js";
 import { analyzeResume, ResumeTextError } from "../src/services/resumeScoring.js";
 import { evaluateAnswerHeuristic } from "../src/services/answerEvaluation.js";
 
@@ -49,6 +50,26 @@ describe("resume scoring", () => {
   it("rejects empty or near-empty text", () => {
     expect(() => analyzeResume("")).toThrow(ResumeTextError);
     expect(() => analyzeResume("hello")).toThrow(ResumeTextError);
+  });
+});
+
+describe("PDF text extraction keeps line structure", () => {
+  it("starts a new line at line ends and when the vertical position changes, so headings stay on their own line", () => {
+    const at = (str: string, y: number, hasEOL = false) => ({ str, hasEOL, transform: [1, 0, 0, 1, 0, y] });
+    const text = pdfItemsToText([
+      at("PROJECTS", 524), at("", 505, true),
+      at("Carbonomics AI", 505), at(" ", 505), at("(Final Year Project)", 505), at("", 494, true),
+      at("Tech Stack: Python, FastAPI", 494),
+      at("EXPERIENCE", 480)
+    ]);
+    expect(text.split("\n")).toEqual(["PROJECTS", "Carbonomics AI (Final Year Project)", "Tech Stack: Python, FastAPI", "EXPERIENCE"]);
+  });
+
+  it("scores a resume whose sections were rebuilt from PDF items", () => {
+    const at = (str: string, y: number) => ({ str, hasEOL: true, transform: [1, 0, 0, 1, 0, y] });
+    const lines = GOOD_RESUME.split("\n");
+    const text = pdfItemsToText(lines.map((line, index) => at(line, 800 - index * 12)));
+    expect(analyzeResume(text).score).toBe(analyzeResume(GOOD_RESUME).score);
   });
 });
 
