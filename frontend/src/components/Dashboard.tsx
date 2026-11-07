@@ -31,6 +31,7 @@ import { Overview } from "./OverviewView";
 import { Applications } from "./ApplicationsView";
 import { Opportunities } from "./OpportunitiesView";
 import { Analytics } from "./AnalyticsView";
+import { StudentsManager } from "./StudentsView";
 import { UsersManager } from "./UsersView";
 import { DriveCreator } from "./DriveCreatorView";
 import { DEPARTMENTS as AVAILABLE_DEPARTMENTS } from "@/lib/departments";
@@ -47,6 +48,7 @@ const navIcons: Record<View, ElementType> = {
   "Drive Creator": Plus,
   Analytics: Gauge,
   Users: Users,
+  Students: Users,
   Practice: Target,
   "Export Center": Download,
 };
@@ -55,7 +57,7 @@ const NAV_GROUPS: { label: string; items: View[] }[] = [
   { label: "Overview", items: ["Overview"] },
   { label: "Drives", items: ["Applications", "Opportunities", "Drive Creator"] },
   { label: "Prepare", items: ["Resume AI", "Aptitude", "Interview", "Practice"] },
-  { label: "Insights", items: ["Analytics", "Users", "Export Center"] },
+  { label: "Insights", items: ["Analytics", "Users", "Students", "Export Center"] },
   { label: "Profile", items: ["Profile"] },
 ];
 
@@ -70,6 +72,7 @@ const NAV_META: Record<View, { blurb: string; tone: string }> = {
   Practice: { blurb: "Question bank to sharpen your skills.", tone: "mint" },
   Analytics: { blurb: "Placement numbers by department.", tone: "aqua" },
   Users: { blurb: "Manage students and coordinators.", tone: "lilac" },
+  Students: { blurb: "Review and correct student details.", tone: "lilac" },
   "Export Center": { blurb: "Download reports and records.", tone: "sun" },
   Profile: { blurb: "Your details and account.", tone: "mint" },
 };
@@ -126,6 +129,7 @@ export function Dashboard() {
     if (role !== "STUDENT") base.push("Interview", "Drive Creator", "Analytics");
     if (role === "STUDENT") base.push("Interview", "Practice");
     if (role === "ADMIN") base.push("Users");
+    if (role === "TPC") base.push("Students");
     base.push("Export Center");
     return base;
   }, [role]);
@@ -318,6 +322,22 @@ export function Dashboard() {
 
   const name = user.student?.name ?? user.name ?? user.coordinator?.department ?? (role === "ADMIN" ? "Admin Console" : user.email);
 
+  if (role === "STUDENT" && user.student && !user.student.onboarded) {
+    return (
+      <main className="app light">
+        <AnimatePresence>{notice && <motion.div className="toast" initial={{ y: -30, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: -30, opacity: 0 }}>{notice}</motion.div>}</AnimatePresence>
+        <section className="workspace" style={{ maxWidth: 960, margin: "0 auto", padding: "24px 16px 60px" }}>
+          <header style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+            <div className="brand"><div className="brand-mark"><Command size={20} /></div><span>PlaceTrack <b>AI</b></span></div>
+            <button className="secondary-button" onClick={logout}><LogOut size={16} /> Logout</button>
+          </header>
+          <PageTitle eyebrow="Welcome" title="Complete your profile to continue." copy="Choose your department and enter your CGPA and graduation year. You can change these later only through your Training & Placement Coordinator." />
+          <ProfileEditor user={user} token={token} onSaved={async () => { await refreshMe(); await refreshAll(); flash("Profile saved. Welcome aboard!"); }} flash={flash} dashboard={dashboard} />
+        </section>
+      </main>
+    );
+  }
+
   const navGroups = NAV_GROUPS
     .map((group) => ({ ...group, items: group.items.filter((item) => nav.includes(item)) }))
     .filter((group) => group.items.length > 0);
@@ -401,6 +421,7 @@ export function Dashboard() {
             {view === "Analytics" && <Analytics token={token} dashboard={dashboard} />}
             {view === "Users" && <UsersManager token={token} flash={flash} users={usersList} setUsers={setUsersList} />}
             {view === "Practice" && <PracticeView token={token} flash={flash} />}
+            {view === "Students" && <StudentsManager token={token} department={user.coordinator?.department ?? null} flash={flash} />}
             {view === "Export Center" && <ExportCenter token={token} role={role} flash={flash} />}
           </motion.div>
         </AnimatePresence>

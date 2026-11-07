@@ -94,9 +94,7 @@ export function UsersManager({
       setUsers((prev) => prev.filter((u) => u.id !== id));
       flash("User deleted successfully");
     } catch (error) {
-      console.warn("Backend error, falling back to local deletion:", error);
-      setUsers((prev) => prev.filter((u) => u.id !== id));
-      flash("User deleted (local fallback)");
+      flash(error instanceof Error ? error.message : "Could not delete the user");
     } finally {
       setDeletingId("");
     }

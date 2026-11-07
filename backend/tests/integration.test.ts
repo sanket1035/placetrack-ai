@@ -209,6 +209,33 @@ describe("PlaceTrack AI - Backend Integration Tests", () => {
       otherApplicationId = otherApp.id;
     });
 
+    it("lists and edits only students of their own department", async () => {
+      const list = await request(app).get("/api/auth/students").set("Authorization", `Bearer ${tpcToken}`);
+      expect(list.status).toBe(200);
+      expect(list.body.length).toBeGreaterThan(0);
+      expect(list.body.every((row: any) => row.branch === "Computer Science")).toBe(true);
+
+      const created = await prisma.user.create({
+        data: { email: "edit.me@example.com", role: "STUDENT", student: { create: { name: "Edit Me", branch: "Computer Science", cgpa: 0, graduationYear: 2027, skills: [], onboarded: false } } },
+        include: { student: true }
+      });
+      const own = { id: created.student!.id };
+      const edited = await request(app).patch(`/api/auth/students/${own.id}`).set("Authorization", `Bearer ${tpcToken}`).send({ cgpa: 8.4, backlogs: 1 });
+      expect(edited.status).toBe(200);
+      expect(edited.body.cgpa).toBe(8.4);
+      expect(edited.body.onboarded).toBe(true);
+
+      const moved = await request(app).patch(`/api/auth/students/${own.id}`).set("Authorization", `Bearer ${tpcToken}`).send({ branch: "Mechanical" });
+      expect(moved.status).toBe(403);
+
+      const mech = await prisma.student.findFirstOrThrow({ where: { branch: "Mechanical" } });
+      const outside = await request(app).patch(`/api/auth/students/${mech.id}`).set("Authorization", `Bearer ${tpcToken}`).send({ cgpa: 9 });
+      expect(outside.status).toBe(404);
+
+      const asStudent = await request(app).get("/api/auth/students").set("Authorization", `Bearer ${studentToken}`);
+      expect(asStudent.status).toBe(403);
+    });
+
     it("only lists applications of their own department", async () => {
       const response = await request(app).get("/api/applications").set("Authorization", `Bearer ${tpcToken}`);
       expect(response.status).toBe(200);

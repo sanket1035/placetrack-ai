@@ -13,7 +13,7 @@ import { authenticate, signToken, authorize } from "../middleware/auth.js";
 import { loginLimiter } from "../middleware/rateLimiter.js";
 import { config } from "../lib/config.js";
 import { verifyGoogleCredential } from "../lib/google.js";
-import { attachScope } from "../lib/scope.js";
+import { attachScope, studentWhere } from "../lib/scope.js";
 import { UserRole } from "@prisma/client";
 import { audit } from "../lib/audit.js";
 import { predictReadiness } from "../services/readiness.js";
@@ -149,6 +149,47 @@ authRouter.patch("/me/student", authenticate, async (request, response) => {
   response.json(updated);
 });
 
+/** Training & Placement Coordinators (and admins) list the students they are responsible for. */
+authRouter.get("/students", authenticate, authorize(UserRole.TPC, UserRole.ADMIN), attachScope, async (request, response) => {
+  const students = await prisma.student.findMany({
+    where: studentWhere(request.scope!.department),
+    include: { user: { select: { id: true, email: true, lastLoginAt: true } } },
+    orderBy: { name: "asc" }
+  });
+  response.json(students);
+});
+
+/** A TPC corrects a student's academic details. A TPC can only touch students of their own department and cannot move them elsewhere. */
+authRouter.patch("/students/:id", authenticate, authorize(UserRole.TPC, UserRole.ADMIN), attachScope, async (request, response) => {
+  const id = getFirstString(request.params.id);
+  if (!id) return response.status(400).json({ error: "Invalid student id" });
+  const input = z.object({
+    name: z.string().min(2).optional(),
+    branch: z.string().min(2).optional(),
+    cgpa: z.number().min(0).max(10).optional(),
+    graduationYear: z.number().int().min(2024).max(2035).optional(),
+    backlogs: z.number().int().min(0).max(10).optional()
+  }).parse(request.body);
+
+  const student = await prisma.student.findFirst({ where: { id, ...studentWhere(request.scope!.department) } });
+  if (!student) return response.status(404).json({ error: "Student not found in your department" });
+  const department = request.scope!.department;
+  if (department && input.branch && input.branch !== department) {
+    return response.status(403).json({ error: `You can only manage students of ${department}. Ask an admin to move a student to another department.` });
+  }
+
+  const next = { ...student, ...Object.fromEntries(Object.entries(input).filter(([, value]) => value !== undefined)) } as typeof student;
+  const readinessScore = Math.min(100, Math.max(25, Math.round(next.cgpa * 8 + student.skills.length * 3 - next.backlogs * 8)));
+  const onboarded = student.onboarded || (next.branch !== "Undeclared" && next.cgpa > 0);
+  const updated = await prisma.student.update({
+    where: { id },
+    data: { ...input, readinessScore, onboarded },
+    include: { user: { select: { id: true, email: true, lastLoginAt: true } } }
+  });
+  await audit(request.auth!.userId, "UPDATE_STUDENT", "auth", { studentId: id });
+  response.json(updated);
+});
+
 // Admin User Management routes
 
 authRouter.get("/users", authenticate, authorize(UserRole.ADMIN), async (request, response) => {
@@ -246,6 +287,7 @@ authRouter.patch("/users/:id", authenticate, authorize(UserRole.ADMIN), async (r
           name: input.name ?? undefined,
           branch: input.branch ?? undefined,
           cgpa: input.cgpa ?? undefined,
+          graduationYear: input.graduationYear ?? undefined,
           skills: input.skills ?? undefined,
           backlogs: input.backlogs ?? undefined,
           readinessScore
