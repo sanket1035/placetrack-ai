@@ -59,6 +59,29 @@ const navIcons: Record<View, ElementType> = {
   "Export Center": Download,
 };
 
+const NAV_GROUPS: { label: string; items: View[] }[] = [
+  { label: "Overview", items: ["Overview"] },
+  { label: "Drives", items: ["Applications", "Opportunities", "Drive Creator"] },
+  { label: "Prepare", items: ["Resume AI", "Aptitude", "Interview", "Practice"] },
+  { label: "Insights", items: ["Analytics", "Users", "Export Center"] },
+  { label: "Profile", items: ["Profile"] },
+];
+
+const NAV_META: Record<View, { blurb: string; tone: string }> = {
+  Overview: { blurb: "Your placement status at a glance.", tone: "mint" },
+  Applications: { blurb: "Track every application and its stage.", tone: "mint" },
+  Opportunities: { blurb: "Open drives you are eligible for.", tone: "sun" },
+  "Drive Creator": { blurb: "Create and publish a placement drive.", tone: "lilac" },
+  "Resume AI": { blurb: "Upload a resume and get a real score.", tone: "aqua" },
+  Aptitude: { blurb: "Timed mock tests with answer review.", tone: "sun" },
+  Interview: { blurb: "Practice answers and get AI feedback.", tone: "lilac" },
+  Practice: { blurb: "Question bank to sharpen your skills.", tone: "mint" },
+  Analytics: { blurb: "Placement numbers by department.", tone: "aqua" },
+  Users: { blurb: "Manage students and coordinators.", tone: "lilac" },
+  "Export Center": { blurb: "Download reports and records.", tone: "sun" },
+  Profile: { blurb: "Your details and account.", tone: "mint" },
+};
+
 function readStorage(key: string) {
   try {
     return typeof window !== "undefined" ? window.localStorage.getItem(key) : null;
@@ -85,8 +108,8 @@ function removeStorage(key: string) {
 
 export function Dashboard() {
   const [menuOpen, setMenuOpen] = useState(false);
-  const [moreOpen, setMoreOpen] = useState(false);
-  const moreRef = useRef<HTMLDivElement>(null);
+  const [openGroup, setOpenGroup] = useState<string | null>(null);
+  const navRef = useRef<HTMLElement>(null);
   const [view, setView] = useState<View>("Overview");
   const [notice, setNotice] = useState("");
   const [token, setToken] = useState<string | null>(null);
@@ -168,15 +191,15 @@ export function Dashboard() {
   }, []);
 
   useEffect(() => {
-    if (!moreOpen) return;
+    if (!openGroup) return;
     const close = (event: PointerEvent | KeyboardEvent) => {
-      if (event instanceof KeyboardEvent) { if (event.key === "Escape") setMoreOpen(false); return; }
-      if (moreRef.current && !moreRef.current.contains(event.target as Node)) setMoreOpen(false);
+      if (event instanceof KeyboardEvent) { if (event.key === "Escape") setOpenGroup(null); return; }
+      if (navRef.current && !navRef.current.contains(event.target as Node)) setOpenGroup(null);
     };
     document.addEventListener("pointerdown", close);
     document.addEventListener("keydown", close);
     return () => { document.removeEventListener("pointerdown", close); document.removeEventListener("keydown", close); };
-  }, [moreOpen]);
+  }, [openGroup]);
 
   const flash = (message: string) => {
     setNotice(message);
@@ -303,19 +326,10 @@ export function Dashboard() {
 
   const name = user.student?.name ?? user.name ?? user.coordinator?.department ?? (role === "ADMIN" ? "Admin Console" : user.email);
 
-  const PRIMARY_NAV_COUNT = 5;
-  const primaryNav = nav.slice(0, PRIMARY_NAV_COUNT);
-  const moreNav = nav.slice(PRIMARY_NAV_COUNT);
-  const renderNavButton = (item: View) => {
-    const Icon = navIcons[item];
-    return <button
-      type="button"
-      data-view={item}
-      className={view === item ? "active" : ""}
-      onClick={() => { setView(item); setMenuOpen(false); setMoreOpen(false); }}
-      key={item}
-    ><Icon size={18} /><span>{item}</span></button>;
-  };
+  const navGroups = NAV_GROUPS
+    .map((group) => ({ ...group, items: group.items.filter((item) => nav.includes(item)) }))
+    .filter((group) => group.items.length > 0);
+  const go = (item: View) => { setView(item); setMenuOpen(false); setOpenGroup(null); };
 
   return (
     <main className="app light">
@@ -327,23 +341,35 @@ export function Dashboard() {
           <div className="avatar">{initials(name)}</div>
           <div><strong>{name}</strong><span>{role} {user.student ? `· ${user.student.branch}` : ""}</span></div>
         </div>
-        <nav>
+        <nav ref={navRef}>
           <p className="nav-label">Workspace</p>
-          {primaryNav.map(renderNavButton)}
-          {moreNav.length > 0 && (
-            <div className="nav-more" ref={moreRef}>
-              <button
-                type="button"
-                className={`nav-more-trigger ${moreNav.includes(view) ? "active" : ""}`}
-                aria-haspopup="menu"
-                aria-expanded={moreOpen}
-                onClick={() => setMoreOpen((open) => !open)}
-              ><span>{moreNav.includes(view) ? view : "More"}</span><ChevronDown size={14} /></button>
-              <div className={moreOpen ? "nav-more-menu open" : "nav-more-menu"} role="menu">
-                {moreNav.map(renderNavButton)}
+          {navGroups.map((group) => {
+            if (group.items.length === 1) {
+              const item = group.items[0];
+              const Icon = navIcons[item];
+              return <button type="button" data-view={item} className={view === item ? "active" : ""} onClick={() => go(item)} key={group.label}><Icon size={18} /><span>{item}</span></button>;
+            }
+            const active = group.items.includes(view);
+            const open = openGroup === group.label;
+            return (
+              <div className="nav-group" key={group.label} onMouseEnter={() => setOpenGroup(group.label)} onMouseLeave={() => setOpenGroup((current) => (current === group.label ? null : current))}>
+                <button type="button" className={`nav-group-trigger ${active ? "active" : ""}`} aria-haspopup="menu" aria-expanded={open} onClick={() => setOpenGroup(open ? null : group.label)}>
+                  <span>{group.label}</span><ChevronDown size={14} className={open ? "flip" : ""} />
+                </button>
+                <div className={open ? "nav-panel open" : "nav-panel"} role="menu">
+                  {group.items.map((item) => {
+                    const Icon = navIcons[item];
+                    return (
+                      <button type="button" role="menuitem" data-view={item} className={`nav-card ${view === item ? "active" : ""}`} onClick={() => go(item)} key={item}>
+                        <span className={`nav-card-icon tone-${NAV_META[item].tone}`}><Icon size={18} /></span>
+                        <span className="nav-card-text"><strong>{item}</strong><small>{NAV_META[item].blurb}</small></span>
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
-            </div>
-          )}
+            );
+          })}
         </nav>
         <div className="sidebar-bottom">
           <button onClick={logout}><LogOut size={18} /> Logout</button>
