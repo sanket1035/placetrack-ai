@@ -14,6 +14,7 @@ export type View =
   | "Users"
   | "Students"
   | "Practice"
+  | "Off-Campus"
   | "Export Center";
 
 export interface Drive {

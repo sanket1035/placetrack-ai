@@ -7,7 +7,7 @@ import {
   CircleUserRound, Command, LayoutDashboard, Loader2, LogOut, Menu,
   RotateCw, Search, X, BriefcaseBusiness, Building2, FileScan, BookOpenCheck,
   Sparkles, Gauge, Users, Target, Download, Plus, CheckCircle2, ArrowUpRight,
-  Sun, Moon, Upload, Send, CalendarDays, Trophy, Share2, Trash2, ChevronDown
+  Sun, Moon, Upload, Send, CalendarDays, Trophy, Share2, Trash2, ChevronDown, ClipboardList
 } from "lucide-react";
 import { api, ROLE_LABEL, type LoginResponse, type Role, type SessionUser } from "@/lib/api";
 import { NotificationBell } from "./NotificationBell";
@@ -34,6 +34,7 @@ import { Analytics } from "./AnalyticsView";
 import { StudentsManager } from "./StudentsView";
 import { UsersManager } from "./UsersView";
 import { DriveCreator } from "./DriveCreatorView";
+import { OffCampusView } from "./OffCampusView";
 import { DEPARTMENTS as AVAILABLE_DEPARTMENTS } from "@/lib/departments";
 
 
@@ -50,12 +51,13 @@ const navIcons: Record<View, ElementType> = {
   Users: Users,
   Students: Users,
   Practice: Target,
+  "Off-Campus": ClipboardList,
   "Export Center": Download,
 };
 
 const NAV_GROUPS: { label: string; items: View[] }[] = [
   { label: "Overview", items: ["Overview"] },
-  { label: "Drives", items: ["Applications", "Opportunities", "Drive Creator"] },
+  { label: "Drives", items: ["Applications", "Off-Campus", "Opportunities", "Drive Creator"] },
   { label: "Prepare", items: ["Resume AI", "Aptitude", "Interview", "Practice"] },
   { label: "Insights", items: ["Analytics", "Users", "Students", "Export Center"] },
   { label: "Profile", items: ["Profile"] },
@@ -69,6 +71,7 @@ const NAV_META: Record<View, { blurb: string; tone: string }> = {
   "Resume AI": { blurb: "Upload a resume and get a real score.", tone: "aqua" },
   Aptitude: { blurb: "Timed mock tests with answer review.", tone: "sun" },
   Interview: { blurb: "Practice answers and get AI feedback.", tone: "lilac" },
+  "Off-Campus": { blurb: "Privately track jobs and internships you applied for.", tone: "aqua" },
   Practice: { blurb: "Question bank to sharpen your skills.", tone: "mint" },
   Analytics: { blurb: "Placement numbers by department.", tone: "aqua" },
   Users: { blurb: "Manage students and coordinators.", tone: "lilac" },
@@ -127,7 +130,7 @@ export function Dashboard() {
   const nav = useMemo(() => {
     const base: View[] = ["Overview", "Applications", "Opportunities", "Resume AI", "Aptitude", "Profile"];
     if (role !== "STUDENT") base.push("Interview", "Drive Creator", "Analytics");
-    if (role === "STUDENT") base.push("Interview", "Practice");
+    if (role === "STUDENT") base.push("Interview", "Practice", "Off-Campus");
     if (role === "ADMIN") base.push("Users");
     if (role === "TPC") base.push("Students");
     base.push("Export Center");
@@ -427,6 +430,7 @@ export function Dashboard() {
             {view === "Drive Creator" && <DriveCreator token={token} flash={flash} onCreated={() => refreshAll()} drives={drives} />}
             {view === "Analytics" && <Analytics token={token} dashboard={dashboard} />}
             {view === "Users" && <UsersManager token={token} flash={flash} users={usersList} setUsers={setUsersList} />}
+            {view === "Off-Campus" && role === "STUDENT" && <OffCampusView token={token} flash={flash} />}
             {view === "Practice" && <PracticeView token={token} flash={flash} />}
             {view === "Students" && <StudentsManager token={token} department={user.coordinator?.department ?? null} flash={flash} />}
             {view === "Export Center" && <ExportCenter token={token} role={role} flash={flash} />}

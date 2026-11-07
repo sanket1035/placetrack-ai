@@ -68,6 +68,7 @@ model Student {
   emailEnabled    Boolean       @default(true)
   onboarded       Boolean       @default(false)
   applications    Application[]
+  offCampus       OffCampusApplication[]
   testResults     TestResult[]
 
   @@index([branch, graduationYear])
@@ -242,4 +243,40 @@ model QuestionAttempt {
   feedback   String?
   createdAt  DateTime @default(now())
   question   InterviewQuestion @relation(fields: [questionId], references: [id])
+}
+
+enum OffCampusType {
+  JOB
+  INTERNSHIP
+}
+
+enum OffCampusStatus {
+  APPLIED
+  ASSESSMENT
+  INTERVIEW
+  OFFER
+  REJECTED
+  WITHDRAWN
+}
+
+/// A student's private record of an application made outside the college drives. Only its owner can read or change it.
+model OffCampusApplication {
+  id          String          @id @default(cuid())
+  studentId   String
+  student     Student         @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  company     String
+  role        String
+  type        OffCampusType   @default(JOB)
+  link        String?
+  location    String?
+  compensation String?
+  appliedOn   DateTime        @default(now())
+  followUpOn  DateTime?
+  status      OffCampusStatus @default(APPLIED)
+  notes       String?
+  timeline    Json
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  @@index([studentId, status])
 }
