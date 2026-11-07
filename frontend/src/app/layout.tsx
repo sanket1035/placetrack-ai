@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import "./theme-c.css";
 
 export const metadata: Metadata = {
   title: "PlaceTrack AI — Placement readiness, made visible",
