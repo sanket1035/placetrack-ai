@@ -290,3 +290,6 @@ h1, h2, h3, h4 { font-family: var(--font-display); font-weight: 800; letter-spac
 .auth-card h2 { font-size: 30px; }
 .auth-sub { font-size: 14px; margin-bottom: 14px; }
 .auth-google { margin-top: 4px; }
+
+/* Login footer links */
+.auth-foot a { color: inherit; text-decoration: underline; text-underline-offset: 2px; }
