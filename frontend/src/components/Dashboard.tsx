@@ -1220,7 +1220,7 @@ function InterviewCoach({ token, flash }: { token: string; flash: (message: stri
       ],
       soft: softSkillsQuestions
     },
-    "AI & Data Science": {
+    "Artificial Intelligence & Data Science": {
       technical: [
         "What is the difference between supervised and unsupervised learning?",
         "Explain the bias-variance tradeoff in machine learning.",
@@ -1240,7 +1240,7 @@ function InterviewCoach({ token, flash }: { token: string; flash: (message: stri
       ],
       soft: softSkillsQuestions
     },
-    "Electronics & TC": {
+    "Electronics & Telecommunication Engineering": {
       technical: [
         "What is the difference between analog and digital modulation? Explain ASK, FSK, and PSK.",
         "Explain the operation of a PN junction diode under forward and reverse bias.",
@@ -1340,7 +1340,7 @@ function InterviewCoach({ token, flash }: { token: string; flash: (message: stri
       ],
       soft: softSkillsQuestions
     },
-    "Robotics & Automation": {
+    "Robotics & Automation Engineering": {
       technical: [
         "What is ROS (Robot Operating System)? Explain its node, topic, and service architecture.",
         "Explain forward kinematics and inverse kinematics in robotic manipulators.",
