@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Command, Moon, ShieldCheck } from "lucide-react";
+import { ShieldCheck } from "lucide-react";
 
 const CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID ?? "";
 
@@ -34,10 +34,8 @@ function loadGoogleScript(): Promise<void> {
   });
 }
 
-export function LoginScreen({ dark, loading, onToggleTheme, onGoogleCredential }: {
-  dark: boolean;
+export function LoginScreen({ loading, onGoogleCredential }: {
   loading: boolean;
-  onToggleTheme: () => void;
   onGoogleCredential: (credential: string) => void | Promise<void>;
 }) {
   const buttonRef = useRef<HTMLDivElement>(null);
@@ -63,7 +61,7 @@ export function LoginScreen({ dark, loading, onToggleTheme, onGoogleCredential }
           }
         });
         window.google.accounts.id.renderButton(buttonRef.current, {
-          theme: dark ? "filled_black" : "outline",
+          theme: "outline",
           size: "large",
           shape: "pill",
           text: "continue_with",
@@ -72,25 +70,24 @@ export function LoginScreen({ dark, loading, onToggleTheme, onGoogleCredential }
       })
       .catch((err: Error) => setError(err.message));
     return () => { cancelled = true; };
-  }, [dark]);
+  }, []);
 
   return (
-    <main className={dark ? "app dark login-app" : "app light login-app"}>
+    <main className="app light login-app">
       <div className="auth-shell">
         <section className="auth-hero">
-          <div className="brand"><div className="brand-mark"><Command size={18} /></div><span>PlaceTrack <b>AI</b></span></div>
+          <div className="auth-brand">PlaceTrack AI</div>
           <div>
-            <span className="auth-tag">Campus placement platform</span>
+            <span className="auth-tag">Placement management</span>
             <h1>Your placement season, <mark>organised.</mark></h1>
             <p>Track applications, practise aptitude and interviews, and get your resume reviewed in one place.</p>
           </div>
-          <span className="auth-foot">Built for engineering colleges</span>
+          <span className="auth-foot">Trusted by engineering colleges</span>
         </section>
 
         <section className="auth-card">
-          <button type="button" className="auth-theme" onClick={onToggleTheme} aria-label="Toggle theme"><Moon size={16} /></button>
           <h2>Sign in</h2>
-          <p className="auth-sub">Continue with your college Google account. New students are registered automatically on first sign-in.</p>
+          <p className="auth-sub">Use your college email.</p>
 
           {CLIENT_ID ? (
             <div className="auth-google" ref={buttonRef} aria-busy={loading} />

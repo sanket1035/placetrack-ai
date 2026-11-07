@@ -10,8 +10,6 @@ import {
   Sun, Moon, Upload, Send, CalendarDays, Trophy, Share2, Trash2
 } from "lucide-react";
 import { api, type LoginResponse, type Role, type SessionUser } from "@/lib/api";
-import { getTheme, setTheme } from "@/lib/theme";
-import { ThemeToggle } from "./ui/ThemeToggle";
 import { NotificationBell } from "./NotificationBell";
 import { useNotifications } from "../hooks/useNotifications";
 import PracticeView from "./PracticeView";
@@ -86,7 +84,6 @@ function removeStorage(key: string) {
 }
 
 export function Dashboard() {
-  const [dark, setDark] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [view, setView] = useState<View>("Overview");
   const [notice, setNotice] = useState("");
@@ -130,12 +127,6 @@ export function Dashboard() {
           removeStorage("placetrack-user");
         });
     }
-  }, []);
-
-  useEffect(() => {
-    const current = getTheme();
-    setDark(current === "dark");
-    setTheme(current);
   }, []);
 
   useEffect(() => {
@@ -280,13 +271,13 @@ export function Dashboard() {
   }, [tests, searchQuery]);
 
   if (!user || !token) {
-    return <LoginScreen dark={dark} loading={loading} onToggleTheme={() => { const next = !dark; setDark(next); setTheme(next ? "dark" : "light"); }} onGoogleCredential={handleGoogleCredential} />;
+    return <LoginScreen loading={loading} onGoogleCredential={handleGoogleCredential} />;
   }
 
   const name = user.student?.name ?? user.name ?? user.coordinator?.department ?? (role === "ADMIN" ? "Admin Console" : user.email);
 
   return (
-    <main className={dark ? "app dark" : "app light"}>
+    <main className="app light">
       <AnimatePresence>{notice && <motion.div className="toast" initial={{ y: -30, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: -30, opacity: 0 }}>{notice}</motion.div>}</AnimatePresence>
       <aside className={menuOpen ? "sidebar open" : "sidebar"}>
         <button className="mobile-close" onClick={() => setMenuOpen(false)}><X /></button>
@@ -329,7 +320,6 @@ export function Dashboard() {
           <div className="header-actions">
             <button onClick={() => refreshAll()} aria-label="Refresh">{loading ? <Loader2 className="spin" size={18} /> : <RotateCw size={18} />}</button>
             <NotificationBell notifications={notifications} markAsRead={markAsRead} markAllAsRead={markAllAsRead} onNavigate={setView} />
-            <ThemeToggle onThemeChange={(t) => setDark(t === "dark")} />
             <button className="user-button" onClick={() => setProfileOpen(true)} aria-label="Open profile"><CircleUserRound size={22} /></button>
           </div>
         </header>

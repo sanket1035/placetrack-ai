@@ -107,8 +107,8 @@ export function QuestionCard({ question, token, flash }: QuestionCardProps) {
         display: "flex",
         flexDirection: "column",
         gap: "16px",
-        background: "linear-gradient(135deg, rgba(21, 21, 31, 0.8) 0%, rgba(11, 11, 18, 0.9) 100%)",
-        border: "1px solid var(--line, rgba(255, 255, 255, 0.08))"
+        background: "var(--panel, #fff)",
+        border: "1px solid var(--line, #1B3A0A)"
       }}
     >
       {/* Badges row */}
@@ -167,7 +167,7 @@ export function QuestionCard({ question, token, flash }: QuestionCardProps) {
             width: "100%",
             minHeight: "100px",
             background: "var(--panel-2, rgba(28, 28, 40, 0.7))",
-            border: "1px solid var(--line, rgba(255, 255, 255, 0.08))",
+            border: "1px solid var(--line, #1B3A0A)",
             borderRadius: "10px",
             padding: "12px",
             color: "var(--text)",

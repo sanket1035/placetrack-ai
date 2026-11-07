@@ -30,8 +30,8 @@ export function FeedbackPanel({ score, feedback, modelAnswer, userAnswer, onRese
         display: "flex",
         flexDirection: "column",
         gap: "20px",
-        background: "linear-gradient(135deg, rgba(21, 21, 31, 0.9) 0%, rgba(11, 11, 18, 0.95) 100%)",
-        border: "1px solid var(--line, rgba(255, 255, 255, 0.1))"
+        background: "var(--panel, #fff)",
+        border: "1px solid var(--line, #1B3A0A)"
       }}
     >
       {/* Head row: Score and Status */}
@@ -51,7 +51,7 @@ export function FeedbackPanel({ score, feedback, modelAnswer, userAnswer, onRese
               flexShrink: 0
             }}
           >
-            <span style={{ fontSize: "18px", fontWeight: 800, color: "#FFFFFF" }}>
+            <span style={{ fontSize: "18px", fontWeight: 800, color: "var(--ink, #1B3A0A)" }}>
               {score}
             </span>
             <span style={{ fontSize: "9px", color: "var(--muted)", position: "absolute", bottom: "4px" }}>
@@ -59,7 +59,7 @@ export function FeedbackPanel({ score, feedback, modelAnswer, userAnswer, onRese
             </span>
           </div>
           <div>
-            <h4 style={{ margin: 0, fontSize: "14px", fontWeight: 700, color: "#FFFFFF" }}>
+            <h4 style={{ margin: 0, fontSize: "14px", fontWeight: 700, color: "var(--ink, #1B3A0A)" }}>
               AI Evaluation Score
             </h4>
             <p style={{ margin: "2px 0 0", fontSize: "11px", color: "var(--muted)" }}>
@@ -74,7 +74,7 @@ export function FeedbackPanel({ score, feedback, modelAnswer, userAnswer, onRese
               key={idx}
               size={12}
               fill={idx < score ? scoreColor : "transparent"}
-              color={idx < score ? scoreColor : "rgba(255,255,255,0.08)"}
+              color={idx < score ? scoreColor : "rgba(27,58,10,0.12)"}
             />
           ))}
         </div>
@@ -87,8 +87,8 @@ export function FeedbackPanel({ score, feedback, modelAnswer, userAnswer, onRese
         </h5>
         <div
           style={{
-            background: "rgba(255, 255, 255, 0.02)",
-            border: "1px solid rgba(255, 255, 255, 0.04)",
+            background: "rgba(27,58,10,0.04)",
+            border: "1px solid rgba(27,58,10,0.15)",
             borderRadius: "10px",
             padding: "14px 16px",
             fontSize: "13px",
@@ -102,7 +102,7 @@ export function FeedbackPanel({ score, feedback, modelAnswer, userAnswer, onRese
       </div>
 
       {/* Model Answer Dropdown */}
-      <div style={{ display: "flex", flexDirection: "column", borderTop: "1px solid var(--line, rgba(255, 255, 255, 0.08))", paddingTop: "14px" }}>
+      <div style={{ display: "flex", flexDirection: "column", borderTop: "1px solid var(--line, #1B3A0A)", paddingTop: "14px" }}>
         <button
           onClick={() => setShowModelAnswer((prev) => !prev)}
           type="button"
@@ -112,7 +112,7 @@ export function FeedbackPanel({ score, feedback, modelAnswer, userAnswer, onRese
             justifyContent: "space-between",
             background: "transparent",
             border: 0,
-            color: "#FFFFFF",
+            color: "var(--ink, #1B3A0A)",
             fontSize: "13px",
             fontWeight: 600,
             cursor: "pointer",
