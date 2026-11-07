@@ -12,6 +12,7 @@ export type View =
   | "Drive Creator"
   | "Analytics"
   | "Users"
+  | "Students"
   | "Practice"
   | "Export Center";
 
