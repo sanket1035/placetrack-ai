@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { ArrowUpRight, CalendarDays, BriefcaseBusiness, Trophy, Building2, Sparkles, Users } from "lucide-react";
 import type { Role, DashboardData, Application, Drive, View } from "../types/dashboard";
 import { initials, getLogoUrl } from "../lib/queries";
+import { placementSeason } from "../lib/season";
 import { ReadinessRing } from "./ReadinessRing";
 import ProfileCompleteness from "./ProfileCompleteness";
 import DashboardSkeleton from "./ui/DashboardSkeleton";
@@ -122,7 +123,7 @@ export function Overview({
               <CalendarDays size={14} /> {currentDateString}
             </div>
             <p style={{ margin: "6px 0 0", fontSize: "11px", color: "var(--welcome-muted)" }}>
-              Placement Season: <b>2025-26</b>
+              Placement Season: <b>{placementSeason()}</b>
             </p>
           </div>
         </div>

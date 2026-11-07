@@ -35,6 +35,7 @@ import { StudentsManager } from "./StudentsView";
 import { UsersManager } from "./UsersView";
 import { DriveCreator } from "./DriveCreatorView";
 import { OffCampusView } from "./OffCampusView";
+import { placementSeason } from "@/lib/season";
 import { DEPARTMENTS as AVAILABLE_DEPARTMENTS } from "@/lib/departments";
 
 
@@ -1621,7 +1622,7 @@ function InterviewCoach({ token, flash }: { token: string; flash: (message: stri
 }
 
 function PageTitle({ eyebrow, title, copy }: { eyebrow: string; title: string; copy: string }) {
-  return <div className="page-title"><div><span>{eyebrow}</span><h1><HighlightedTitle text={title} /></h1><p>{copy}</p></div><div className="date-pill"><CalendarDays size={16} /> Placement season 2025-26</div></div>;
+  return <div className="page-title"><div><span>{eyebrow}</span><h1><HighlightedTitle text={title} /></h1><p>{copy}</p></div><div className="date-pill"><CalendarDays size={16} /> Placement season {placementSeason()}</div></div>;
 }
 
 function Stat({ icon, value, label, sub, tone, trend }: { icon: ReactNode; value: string; label: string; sub: string; tone: string; trend?: string }) {
