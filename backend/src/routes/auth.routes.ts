@@ -37,7 +37,7 @@ authRouter.post("/google", loginLimiter, async (request, response) => {
     return response.status(401).json({ error: error?.message ?? "Google verification failed" });
   }
 
-  const domain = profile.email.split("@")[1] ?? "";
+  const domain = (profile.email.split("@")[1] ?? "").toLowerCase();
   let user = await prisma.user.findUnique({
     where: { email: profile.email },
     include: { student: true, coordinator: true }
@@ -45,6 +45,11 @@ authRouter.post("/google", loginLimiter, async (request, response) => {
 
   if (user?.googleId && user.googleId !== profile.sub) {
     return response.status(403).json({ error: "This email is linked to a different Google account" });
+  }
+
+  // With ALLOWED_STUDENT_EMAIL_DOMAINS set, student accounts must use an allowed domain (admins and invited TPCs are exempt).
+  if (user?.role === "STUDENT" && config.studentDomains.length > 0 && !config.studentDomains.includes(domain)) {
+    return response.status(403).json({ error: "Only college email addresses can sign in. Use your @" + config.studentDomains[0] + " account." });
   }
 
   if (!user) {

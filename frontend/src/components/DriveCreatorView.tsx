@@ -3,16 +3,8 @@ import { Plus, Trash2, Loader2 } from "lucide-react";
 import { api } from "@/lib/api";
 import type { Drive } from "../types/dashboard";
 import PageTitle from "./PageTitle";
+import { DEPARTMENTS as AVAILABLE_DEPARTMENTS } from "@/lib/departments";
 
-const AVAILABLE_DEPARTMENTS = [
-  "Computer Engineering",
-  "Information Technology",
-  "AI & Data Science",
-  "E&TC",
-  "Electrical",
-  "Mechanical",
-  "Civil"
-];
 
 export function DriveCreator({
   token,

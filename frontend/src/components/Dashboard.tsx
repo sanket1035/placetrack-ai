@@ -33,16 +33,8 @@ import { Opportunities } from "./OpportunitiesView";
 import { Analytics } from "./AnalyticsView";
 import { UsersManager } from "./UsersView";
 import { DriveCreator } from "./DriveCreatorView";
+import { DEPARTMENTS as AVAILABLE_DEPARTMENTS } from "@/lib/departments";
 
-const AVAILABLE_DEPARTMENTS = [
-  "Computer Engineering",
-  "Information Technology",
-  "AI & Data Science",
-  "E&TC",
-  "Electrical",
-  "Mechanical",
-  "Civil"
-];
 
 const navIcons: Record<View, ElementType> = {
   Overview: LayoutDashboard,

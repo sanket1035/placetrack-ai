@@ -2,6 +2,7 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { SlidersHorizontal, Plus, X, Save, FolderOpen } from "lucide-react";
 import type { FilterCondition, FilterPreset, FilterField, FilterOperator } from "../types/dashboard";
+import { DEPARTMENTS as AVAILABLE_DEPARTMENTS } from "@/lib/departments";
 
 const FILTER_FIELD_LABELS: Record<FilterField, string> = {
   cgpa: "CGPA",
@@ -21,15 +22,6 @@ const FILTER_OPERATORS_FOR_FIELD: Record<FilterField, { label: string; value: Fi
   company:        [{ label: "contains", value: "contains" }, { label: "is", value: "eq" }],
 };
 
-const AVAILABLE_DEPARTMENTS = [
-  "Computer Engineering",
-  "Information Technology",
-  "AI & Data Science",
-  "E&TC",
-  "Electrical",
-  "Mechanical",
-  "Civil"
-];
 
 export default function PlacementFilterBuilder({
   conditions,
