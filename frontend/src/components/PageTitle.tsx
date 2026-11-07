@@ -1,6 +1,7 @@
 // PageTitle.tsx - Shared page-level heading component used across feature view modules.
 import { CalendarDays } from "lucide-react";
 import { HighlightedTitle } from "./ui/Highlight";
+import { placementSeason } from "../lib/season";
 
 export default function PageTitle({
   eyebrow,
@@ -19,7 +20,7 @@ export default function PageTitle({
         <p>{copy}</p>
       </div>
       <div className="date-pill">
-        <CalendarDays size={16} /> Placement season 2025-26
+        <CalendarDays size={16} /> Placement season {placementSeason()}
       </div>
     </div>
   );
