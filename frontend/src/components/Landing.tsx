@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ArrowRight, BarChart3, Bell, BookOpenCheck, Building2, FileScan, GraduationCap, Mic, ShieldCheck, Users } from "lucide-react";
+import { PUBLISHED_RECRUITERS, TOP_RECRUITERS } from "../data/recruiters";
 import "./landing.css";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
@@ -57,14 +58,13 @@ const FAQ = [
 
 export function Landing() {
   const [stats, setStats] = useState<PublicStats | null>(null);
-  const [recruiters, setRecruiters] = useState<Record<string, string[]>>({});
+  const [showAll, setShowAll] = useState(false);
 
   useEffect(() => {
     fetch(`${API_BASE}/api/public/stats`).then((r) => (r.ok ? r.json() : null)).then(setStats).catch(() => setStats(null));
-    fetch(`${API_BASE}/api/public/recruiters`).then((r) => (r.ok ? r.json() : {})).then((groups) => setRecruiters(groups && typeof groups === "object" && !Array.isArray(groups) ? (groups as Record<string, string[]>) : {})).catch(() => setRecruiters({}));
   }, []);
 
-  const recruiterGroups = Object.entries(recruiters).filter(([, names]) => names.length > 0);
+  const recruiterGroups = Object.entries(PUBLISHED_RECRUITERS).filter(([, names]) => names.length > 0);
   const recruiterCount = recruiterGroups.reduce((sum, [, names]) => sum + names.length, 0);
   const showNumbers = Boolean(stats?.enabled && (stats.students ?? 0) > 0);
 
@@ -82,7 +82,7 @@ export function Landing() {
           <a href="#features">Features</a>
           <a href="#how">How it works</a>
           {showNumbers && <a href="#numbers">Numbers</a>}
-          {recruiterCount > 0 && <a href="#recruiters">Recruiters</a>}
+          <a href="#recruiters">Recruiters</a>
           <a href="#faq">FAQ</a>
           <a href="#contact">Contact</a>
         </nav>
@@ -193,18 +193,27 @@ export function Landing() {
         </section>
       )}
 
-      {recruiterCount > 0 && (
-        <section id="recruiters" className="lp-section">
-          <span className="lp-eyebrow">Our recruiters</span>
-          <h2>Companies that have hired from us.</h2>
-          {recruiterGroups.map(([group, names]) => (
-            <div key={group} className="lp-rgroup">
-              <h3>{group} <small>{names.length}</small></h3>
-              <ul className="lp-recruiters-list">{names.map((name) => <li key={name}>{name}</li>)}</ul>
+      <section id="recruiters" className="lp-section">
+        <span className="lp-eyebrow">Our recruiters</span>
+        <h2>Companies that hire from KKWagh.</h2>
+        <div className="lp-top-recruiters">
+          {TOP_RECRUITERS.map((name) => (
+            <div key={name} className="lp-recruiter-tile">
+              <span className="lp-mono">{name.replace(/[^A-Za-z ]/g, "").split(" ").filter(Boolean).slice(0, 2).map((w) => w[0]).join("").toUpperCase()}</span>
+              <b>{name.replace(/ (Ltd\.?|Pvt Ltd|Limited|India)$/i, "")}</b>
             </div>
           ))}
-        </section>
-      )}
+        </div>
+        <button type="button" className="lp-btn lp-btn-dark lp-more" aria-expanded={showAll} onClick={() => setShowAll(!showAll)}>
+          {showAll ? "− Show fewer" : `+ Show all ${recruiterCount} recruiters`}
+        </button>
+        {showAll && recruiterGroups.map(([group, names]) => (
+          <div key={group} className="lp-recruiters-group">
+            <h3>{group}</h3>
+            <ul className="lp-recruiters-list">{names.map((name) => <li key={name}>{name}</li>)}</ul>
+          </div>
+        ))}
+      </section>
 
       <section id="faq" className="lp-section lp-alt">
         <span className="lp-eyebrow">FAQ</span>

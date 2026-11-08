@@ -688,12 +688,4 @@ describe("PlaceTrack AI - Backend Integration Tests", () => {
     });
   });
 
-  describe("recruiters list", () => {
-    it("shows the college recruiters publicly", async () => {
-      const res = await request(app).get("/api/public/recruiters");
-      expect(res.status).toBe(200);
-      expect(res.body["IT companies"]).toContain("Zensar Technologies");
-      expect(Object.keys(res.body)).toEqual(expect.arrayContaining(["Core companies", "Services", "Government"]));
-    });
-  });
 });

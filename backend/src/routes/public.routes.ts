@@ -1,4 +1,3 @@
-import { PUBLISHED_RECRUITERS } from "../data/kkwaghRecruiters.js";
 import { Router } from "express";
 import { prisma } from "../lib/prisma.js";
 
@@ -28,7 +27,3 @@ publicRouter.get("/stats", async (_request, response) => {
   });
 });
 
-// Names only, grouped by sector. Fixed list from the college website, no database or admin step needed.
-publicRouter.get("/recruiters", (_request, response) => {
-  response.json(PUBLISHED_RECRUITERS);
-});

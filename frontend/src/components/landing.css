@@ -19,11 +19,11 @@
 .lp-btn:disabled { opacity: .6; cursor: default; }
 
 .lp-hero { position: relative; width: min(1120px, calc(100% - 32px)); margin: 16px auto 0; padding: 96px 24px 80px; text-align: center; border-radius: 28px; overflow: hidden; border: 1.5px solid var(--line); isolation: isolate; }
-.lp-hero-img { position: absolute; inset: 0; z-index: -1; background: linear-gradient(rgba(251,250,244,.72), rgba(251,250,244,.9)), url(/landing/campus.jpg) center / cover no-repeat; }
+.lp-hero-img { position: absolute; inset: 0; z-index: -1; background: linear-gradient(rgba(251,250,244,.45), rgba(251,250,244,.7)), url(/landing/campus.jpg) center / cover no-repeat; }
 .lp-hero h1, .lp-hero p, .lp-cta { position: relative; }
 .lp-chip { display: inline-flex; align-items: center; gap: 6px; padding: 6px 14px; border: 1.5px solid var(--line); border-radius: 999px; font-size: 12px; font-weight: 600; font-family: "JetBrains Mono", monospace; text-transform: uppercase; letter-spacing: .05em; }
 .lp-hero h1 { font-size: clamp(40px, 7vw, 76px); line-height: 1.02; margin: 22px 0 18px; }
-.lp-hero p { font-size: clamp(16px, 2vw, 19px); max-width: 680px; margin: 0 auto 28px; color: #3f4d37; }
+.lp-hero p { font-size: clamp(16px, 2vw, 19px); max-width: 680px; margin: 0 auto 28px; color: #1f2d16; font-weight: 500; text-shadow: 0 0 12px rgba(251,250,244,.9); }
 .lp-cta { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
 
 .lp-roles { width: min(1120px, calc(100% - 32px)); margin: 0 auto 72px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
@@ -97,3 +97,10 @@
 .lp-contact-card h3 { margin: 0 0 8px; } .lp-contact-card p { margin: 8px 0 0; overflow-wrap: anywhere; }
 .lp-map { width: 100%; min-height: 320px; border: 1.5px solid var(--line); border-radius: 18px; }
 @media (max-width: 760px) { .lp-contact-grid { grid-template-columns: 1fr; } }
+
+.lp-top-recruiters { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 14px; margin-bottom: 20px; }
+.lp-recruiter-tile { display: flex; align-items: center; gap: 12px; background: #fff; border: 1.5px solid var(--line); border-radius: 16px; padding: 14px; }
+.lp-recruiter-tile b { font-size: 14px; line-height: 1.25; }
+.lp-mono { flex: none; width: 42px; height: 42px; border-radius: 12px; background: var(--yellow, #FFE859); color: var(--forest); display: grid; place-items: center; font: 700 14px "JetBrains Mono", monospace; }
+.lp-more { cursor: pointer; }
+.lp-recruiters-group { margin-top: 24px; }
