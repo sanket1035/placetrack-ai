@@ -23,7 +23,6 @@ import { reportsRouter } from "./routes/reports.routes.js";
 import { testsRouter } from "./routes/tests.routes.js";
 import { questionsRouter } from "./routes/questions.routes.js";
 import { publicRouter } from "./routes/public.routes.js";
-import { recruitersRouter } from "./routes/recruiters.routes.js";
 import { sendEmail, getEmailTemplate } from "./services/mailer.js";
 import { checkEligibility } from "./services/eligibility.js";
 import { initDeadlineReminderJob } from "./jobs/deadlineReminder.js";
@@ -77,7 +76,6 @@ app.use("/api/ai", aiRouter);
 app.use("/api/reports", reportsRouter);
 app.use("/api/questions", questionsRouter);
 app.use("/api/public", publicRouter);
-app.use("/api/recruiters", recruitersRouter);
 app.use("/uploads", express.static("uploads"));
 
 function wrapRouter(router: any) {
@@ -111,7 +109,6 @@ wrapRouter(aiRouter);
 wrapRouter(reportsRouter);
 wrapRouter(questionsRouter);
 wrapRouter(publicRouter);
-wrapRouter(recruitersRouter);
 
 app.use((_request, response) => response.status(404).json({ error: "Route not found" }));
 

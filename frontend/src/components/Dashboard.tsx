@@ -38,7 +38,6 @@ import { Opportunities } from "./OpportunitiesView";
 import { Analytics } from "./AnalyticsView";
 import { StudentsManager } from "./StudentsView";
 import { UsersManager } from "./UsersView";
-import { RecruitersManager } from "./RecruitersManager";
 import { DriveCreator } from "./DriveCreatorView";
 import { OffCampusView } from "./OffCampusView";
 import { placementSeason } from "@/lib/season";
@@ -58,7 +57,6 @@ const navIcons: Record<View, ElementType> = {
   "Drive Creator": Plus,
   Analytics: Gauge,
   Users: Users,
-  Recruiters: Building2,
   Students: Users,
   Practice: Target,
   "Off-Campus": ClipboardList,
@@ -69,7 +67,7 @@ const NAV_GROUPS: { label: string; items: View[] }[] = [
   { label: "Overview", items: ["Overview", "Department Overview"] },
   { label: "Drives", items: ["Applications", "Off-Campus", "Opportunities", "Drive Creator"] },
   { label: "Prepare", items: ["Resume AI", "Aptitude", "Interview", "Practice", "Mock Tests"] },
-  { label: "Insights", items: ["Analytics", "Users", "Recruiters", "Students", "Export Center"] },
+  { label: "Insights", items: ["Analytics", "Users", "Students", "Export Center"] },
   { label: "Profile", items: ["Profile"] },
 ];
 
@@ -87,7 +85,6 @@ const NAV_META: Record<View, { blurb: string; tone: string }> = {
   Practice: { blurb: "Question bank to sharpen your skills.", tone: "mint" },
   Analytics: { blurb: "Placement numbers by department.", tone: "aqua" },
   Users: { blurb: "Manage students and coordinators.", tone: "lilac" },
-  Recruiters: { blurb: "Past recruiters shown on the landing page.", tone: "sun" },
   Students: { blurb: "Review and correct student details.", tone: "lilac" },
   "Export Center": { blurb: "Download reports and records.", tone: "sun" },
   Profile: { blurb: "Your details and account.", tone: "mint" },
@@ -162,7 +159,7 @@ export function Dashboard() {
     const base: View[] = ["Overview", "Applications", "Opportunities", "Resume AI", "Aptitude", "Profile"];
     if (role !== "STUDENT") base.push("Interview", "Drive Creator", "Analytics");
     if (role === "STUDENT") base.push("Interview", "Practice", "Off-Campus");
-    if (role === "ADMIN") base.push("Users", "Recruiters");
+    if (role === "ADMIN") base.push("Users");
     base.push("Export Center");
     return base;
   }, [role]);
@@ -486,7 +483,6 @@ export function Dashboard() {
             {view === "Profile" && <ProfilePage user={user} token={token} onSaved={async () => { await refreshMe(); await refreshAll(); flash("Profile updated"); }} flash={flash} dashboard={dashboard} />}
             {view === "Drive Creator" && <DriveCreator token={token} flash={flash} onCreated={() => refreshAll()} drives={drives} />}
             {view === "Analytics" && <Analytics token={token} dashboard={dashboard} />}
-            {view === "Recruiters" && role === "ADMIN" && <RecruitersManager token={token} flash={flash} />}
             {view === "Users" && <UsersManager token={token} flash={flash} users={usersList} setUsers={setUsersList} />}
             {view === "Off-Campus" && role === "STUDENT" && <OffCampusView token={token} flash={flash} />}
             {view === "Practice" && <PracticeView token={token} flash={flash} />}

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { ArrowRight, BarChart3, Bell, BookOpenCheck, Building2, FileScan, GraduationCap, Loader2, Mic, ShieldCheck, Users } from "lucide-react";
+import { ArrowRight, BarChart3, Bell, BookOpenCheck, Building2, FileScan, GraduationCap, Mic, ShieldCheck, Users } from "lucide-react";
 import "./landing.css";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
@@ -58,9 +58,6 @@ const FAQ = [
 export function Landing() {
   const [stats, setStats] = useState<PublicStats | null>(null);
   const [recruiters, setRecruiters] = useState<Record<string, string[]>>({});
-  const [form, setForm] = useState({ name: "", email: "", phone: "", message: "", website: "" });
-  const [sending, setSending] = useState(false);
-  const [note, setNote] = useState<{ ok: boolean; text: string } | null>(null);
 
   useEffect(() => {
     fetch(`${API_BASE}/api/public/stats`).then((r) => (r.ok ? r.json() : null)).then(setStats).catch(() => setStats(null));
@@ -71,22 +68,6 @@ export function Landing() {
   const recruiterCount = recruiterGroups.reduce((sum, [, names]) => sum + names.length, 0);
   const showNumbers = Boolean(stats?.enabled && (stats.students ?? 0) > 0);
 
-  const send = async (event: React.FormEvent) => {
-    event.preventDefault();
-    setSending(true);
-    setNote(null);
-    try {
-      const response = await fetch(`${API_BASE}/api/public/inquiry`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(form) });
-      const data = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(data.error ?? "Could not send your message.");
-      setNote({ ok: true, text: "Thanks. The placement cell will get back to you by email." });
-      setForm({ name: "", email: "", phone: "", message: "", website: "" });
-    } catch (error) {
-      setNote({ ok: false, text: error instanceof Error ? error.message : "Could not send your message." });
-    } finally {
-      setSending(false);
-    }
-  };
 
   return (
     <div className="lp">
@@ -103,7 +84,7 @@ export function Landing() {
           {showNumbers && <a href="#numbers">Numbers</a>}
           {recruiterCount > 0 && <a href="#recruiters">Recruiters</a>}
           <a href="#faq">FAQ</a>
-          <a href="#inquiry">Inquiry</a>
+          <a href="#contact">Contact</a>
         </nav>
         <Link href="/login" className="lp-btn lp-btn-dark">Login</Link>
       </header>
@@ -241,20 +222,24 @@ export function Landing() {
         <Link href="/login" className="lp-btn lp-btn-yellow">Login with Google <ArrowRight size={16} /></Link>
       </section>
 
-      <section id="inquiry" className="lp-section">
-        <span className="lp-eyebrow">Placement inquiry</span>
-        <h2>Talk to the placement cell.</h2>
-        <form className="lp-form" onSubmit={send}>
-          <label>Name<input required minLength={2} maxLength={80} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} /></label>
-          <label>Email<input required type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} /></label>
-          <label>Phone (optional)<input inputMode="tel" maxLength={20} value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} /></label>
-          <label className="lp-wide">Message<textarea required minLength={10} maxLength={1500} rows={4} value={form.message} onChange={(e) => setForm({ ...form, message: e.target.value })} /></label>
-          <input className="lp-trap" tabIndex={-1} autoComplete="off" aria-hidden="true" value={form.website} onChange={(e) => setForm({ ...form, website: e.target.value })} />
-          <div className="lp-wide">
-            <button className="lp-btn lp-btn-dark" disabled={sending}>{sending ? <Loader2 className="spin" size={16} /> : null} Send inquiry</button>
-            {note && <p className={note.ok ? "lp-ok" : "lp-bad"}>{note.text}</p>}
+      <section id="contact" className="lp-section">
+        <span className="lp-eyebrow">Contact</span>
+        <h2>Reach the placement cell.</h2>
+        <div className="lp-contact-grid">
+          <div className="lp-contact-card">
+            <h3>Training &amp; Placement Cell</h3>
+            <p>K K Wagh Institute of Engineering Education &amp; Research, Hirabai Haridas Vidyanagari, Amrutdham, Panchavati, Nashik</p>
+            <p><a href="mailto:tpo-engg@kkwagh.edu.in">tpo-engg@kkwagh.edu.in</a></p>
+            <p><a href="tel:02532517504">0253-2517504</a> · <a href="tel:02532512876">0253-2512876</a></p>
           </div>
-        </form>
+          <iframe
+            className="lp-map"
+            title="K K Wagh Institute of Engineering Education and Research on the map"
+            src="https://maps.google.com/maps?q=K+K+Wagh+Institute+of+Engineering+Education+and+Research+Nashik&output=embed"
+            loading="lazy"
+            referrerPolicy="no-referrer-when-downgrade"
+          />
+        </div>
       </section>
 
       <footer className="lp-foot">
@@ -272,7 +257,7 @@ export function Landing() {
           <Link href="/login">Login</Link>
           <Link href="/privacy">Privacy</Link>
           <Link href="/terms">Terms</Link>
-          <a href="#inquiry">Inquiry</a>
+          <a href="#contact">Contact</a>
         </nav>
         <small>© {new Date().getFullYear()} PlaceTrack</small>
       </footer>

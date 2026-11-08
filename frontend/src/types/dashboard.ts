@@ -14,7 +14,6 @@ export type View =
   | "Drive Creator"
   | "Analytics"
   | "Users"
-  | "Recruiters"
   | "Students"
   | "Practice"
   | "Off-Campus"

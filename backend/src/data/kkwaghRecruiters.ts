@@ -1,6 +1,6 @@
 /**
  * Recruiters listed on the college placement page (kkwagh.edu.in), grouped as the college groups them.
- * Spelling of a few names was cleaned up. The admin can add or remove names on the Recruiters page.
+ * Spelling of a few names was cleaned up.
  */
 export const PUBLISHED_RECRUITERS: Record<string, string[]> = {
   "Core companies": [

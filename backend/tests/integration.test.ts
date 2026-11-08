@@ -17,7 +17,6 @@ describe("PlaceTrack AI - Backend Integration Tests", () => {
 
   beforeAll(async () => {
     // 1. Clean up existing data in correct sequence to prevent foreign key errors
-    await prisma.recruiter.deleteMany();
     await prisma.questionAttempt.deleteMany();
     await prisma.interviewQuestion.deleteMany();
     await prisma.interview.deleteMany();
@@ -682,34 +681,19 @@ describe("PlaceTrack AI - Backend Integration Tests", () => {
   });
 
   describe("public landing endpoints", () => {
-    it("keeps stats off until enabled and validates the inquiry form", async () => {
+    it("keeps stats off until enabled", async () => {
       const stats = await request(app).get("/api/public/stats");
       expect(stats.status).toBe(200);
       expect(stats.body).toEqual({ enabled: false });
-      const bad = await request(app).post("/api/public/inquiry").send({ name: "A", email: "nope", message: "hi" });
-      expect(bad.status).toBe(400);
-      const bot = await request(app).post("/api/public/inquiry").send({ name: "Bot Person", email: "bot@example.com", message: "buy cheap things now", website: "http://spam" });
-      expect(bot.status).toBe(200);
-      const unset = await request(app).post("/api/public/inquiry").send({ name: "Real Person", email: "real@example.com", message: "When is the next drive?" });
-      expect(unset.status).toBe(503);
     });
   });
 
   describe("recruiters list", () => {
-    it("lets only the admin manage it and shows names publicly", async () => {
-      const blocked = await request(app).post("/api/recruiters/bulk").set("Authorization", `Bearer ${studentToken}`).send({ names: ["Infosys"] });
-      expect(blocked.status).toBe(403);
-      const auth = { Authorization: `Bearer ${adminToken}` };
-      const added = await request(app).post("/api/recruiters/bulk").set(auth).send({ names: ["Infosys", "  tcs ", "infosys", "", "X"] });
-      expect(added.status).toBe(201);
-      expect(added.body).toEqual({ added: 2, skipped: 1 });
-      const starter = await request(app).post("/api/recruiters/starter").set(auth);
-      expect(starter.status).toBe(201);
-      expect(starter.body.added).toBeGreaterThan(100);
-      const publicList = await request(app).get("/api/public/recruiters");
-      expect(publicList.body.Other).toEqual(["Infosys", "tcs"]);
-      expect(publicList.body["IT companies"]).toContain("Zensar Technologies");
-      expect(Object.keys(publicList.body)).toEqual(expect.arrayContaining(["Core companies", "Services", "Government"]));
+    it("shows the college recruiters publicly", async () => {
+      const res = await request(app).get("/api/public/recruiters");
+      expect(res.status).toBe(200);
+      expect(res.body["IT companies"]).toContain("Zensar Technologies");
+      expect(Object.keys(res.body)).toEqual(expect.arrayContaining(["Core companies", "Services", "Government"]));
     });
   });
 });

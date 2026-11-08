@@ -59,12 +59,7 @@
 .lp-banner { width: min(1120px, calc(100% - 32px)); margin: 24px auto 0; background: var(--forest); border-radius: 28px; padding: 56px 24px; text-align: center; }
 .lp-banner h2 { color: #fff; margin: 0 auto 10px; } .lp-banner p { color: #d7e5cf; margin: 0 auto 24px; }
 
-.lp-form { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; max-width: 760px; }
-.lp-form label { display: grid; gap: 6px; font-size: 12px; font-weight: 700; font-family: "JetBrains Mono", monospace; text-transform: uppercase; letter-spacing: .05em; }
-.lp-form input, .lp-form textarea { font: 15px "Inter", sans-serif; text-transform: none; letter-spacing: 0; padding: 12px 14px; border: 1.5px solid var(--line); border-radius: 12px; background: #fff; color: var(--forest); }
 .lp-wide { grid-column: 1 / -1; }
-.lp-trap { position: absolute; left: -9999px; width: 1px; height: 1px; opacity: 0; }
-.lp-ok { color: #1c6b2a; font-weight: 600; } .lp-bad { color: #b42318; font-weight: 600; }
 
 .lp-foot { margin-top: 56px; padding: 40px max(16px, calc((100% - 1120px) / 2)); background: var(--forest); color: #d7e5cf; display: flex; flex-wrap: wrap; gap: 24px; justify-content: space-between; align-items: center; }
 .lp-foot p { color: #d7e5cf; margin: 8px 0 0; } .lp-foot nav { display: flex; gap: 20px; font-weight: 600; } .lp-foot small { width: 100%; opacity: .7; }
@@ -73,8 +68,7 @@
 @media (max-width: 860px) {
   .lp-nav nav { display: none; }
   .lp-roles, .lp-grid, .lp-steps { grid-template-columns: 1fr; }
-  .lp-form { grid-template-columns: 1fr; }
-  .lp-hero { padding: 56px 0 40px; }
+    .lp-hero { padding: 56px 0 40px; }
 }
 
 .lp { }
@@ -97,3 +91,9 @@
 
 .lp-gallery { display: flex; gap: 16px; overflow-x: auto; scroll-snap-type: x mandatory; padding: 4px 2px 14px; }
 .lp-gallery img { flex: 0 0 min(640px, 88%); width: min(640px, 88%); height: auto; border-radius: 16px; border: 1.5px solid var(--line); scroll-snap-align: start; background: #fff; }
+
+.lp-contact-grid { display: grid; grid-template-columns: 1fr 1.6fr; gap: 20px; align-items: stretch; }
+.lp-contact-card { background: #fff; border: 1.5px solid var(--line); border-radius: 18px; padding: 24px; }
+.lp-contact-card h3 { margin: 0 0 8px; } .lp-contact-card p { margin: 8px 0 0; overflow-wrap: anywhere; }
+.lp-map { width: 100%; min-height: 320px; border: 1.5px solid var(--line); border-radius: 18px; }
+@media (max-width: 760px) { .lp-contact-grid { grid-template-columns: 1fr; } }
