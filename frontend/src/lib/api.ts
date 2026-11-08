@@ -143,3 +143,17 @@ export async function fetchExportData(
     : `/api/reports/${reportType}.json`;
   return api(path, token);
 }
+
+/** Download the Excel template for uploading a mock test. */
+export async function downloadTestTemplate(token: string): Promise<void> {
+  const response = await fetch(`${API_BASE}/api/tests/template`, { headers: { Authorization: `Bearer ${token}` }, cache: "no-store" });
+  if (!response.ok) throw new Error("Could not download the template");
+  const url = URL.createObjectURL(await response.blob());
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "mock-test-template.xlsx";
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}

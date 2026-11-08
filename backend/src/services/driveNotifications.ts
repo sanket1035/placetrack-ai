@@ -18,7 +18,8 @@ export function formatDeadline(date: Date) {
 /** Email sent to every eligible student when a drive is published. */
 export function buildDriveEmail(drive: PlacementDrive & { company: Company }) {
   const company = escapeHtml(drive.company.name);
-  const role = escapeHtml(drive.role);
+  const roleText = drive.role.replace(/^[\s\u2013\u2014-]+|[\s\u2013\u2014-]+$/g, "") || drive.role;
+  const role = escapeHtml(roleText);
   const row = (label: string, value: string) =>
     `<tr><td style="padding:4px 12px 4px 0;color:#707978;">${label}</td><td style="padding:4px 0;"><strong>${value}</strong></td></tr>`;
   const description = drive.description ? `<p style="white-space:pre-line;">${escapeHtml(drive.description.slice(0, 1500))}</p>` : "";
@@ -37,8 +38,8 @@ export function buildDriveEmail(drive: PlacementDrive & { company: Company }) {
     ${description}
     ${form}`;
   return {
-    subject: `New drive: ${drive.company.name} - ${drive.role} (apply before ${formatDeadline(drive.deadline)})`,
-    html: getEmailTemplate(`${drive.company.name} is hiring: ${drive.role}`, body)
+    subject: `New drive: ${drive.company.name} - ${roleText} (apply before ${formatDeadline(drive.deadline)})`,
+    html: getEmailTemplate(`${drive.company.name} is hiring: ${roleText}`, body)
   };
 }
 
