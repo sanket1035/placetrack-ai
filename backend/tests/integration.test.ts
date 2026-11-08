@@ -644,4 +644,28 @@ describe("PlaceTrack AI - Backend Integration Tests", () => {
       expect(response.body.code).toBe("NOT_FOUND");
     });
   });
+
+  describe("mock test upload", () => {
+    const csv = "Section,Question,Option A,Option B,Option C,Option D,Correct,Explanation\nLogical,What comes after 2 4 6?,7,8,9,10,B,Add 2\n";
+    it("blocks students", async () => {
+      const response = await request(app).post("/api/tests/import").set("Authorization", `Bearer ${studentToken}`)
+        .field("title", "Upload mock").field("duration", "30").attach("file", Buffer.from(csv), "q.csv");
+      expect(response.status).toBe(403);
+    });
+    it("previews, rejects bad rows and saves a valid file", async () => {
+      const auth = { Authorization: `Bearer ${adminToken}` };
+      const preview = await request(app).post("/api/tests/import?preview=1").set(auth).attach("file", Buffer.from(csv), "q.csv");
+      expect(preview.status).toBe(200);
+      expect(preview.body.count).toBe(1);
+      const bad = await request(app).post("/api/tests/import").set(auth).field("title", "Bad upload").field("duration", "30")
+        .attach("file", Buffer.from(csv.replace(",B,", ",Q,")), "q.csv");
+      expect(bad.status).toBe(422);
+      expect(bad.body.errors[0]).toMatch(/Row 2/);
+      const saved = await request(app).post("/api/tests/import").set(auth).field("title", "Upload mock").field("duration", "30").attach("file", Buffer.from(csv), "q.csv");
+      expect(saved.status).toBe(201);
+      expect(saved.body.count).toBe(1);
+      const template = await request(app).get("/api/tests/template").set(auth);
+      expect(template.status).toBe(200);
+    });
+  });
 });

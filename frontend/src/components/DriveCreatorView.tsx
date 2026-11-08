@@ -73,7 +73,7 @@ export function DriveCreator({
         method: "POST",
         body: JSON.stringify({
           company: { name: form.company.trim(), description: `${form.company.trim()} campus hiring partner.` },
-          role: form.role.trim(),
+          role: form.role.replace(/^[\s\u2013\u2014-]+|[\s\u2013\u2014-]+$/g, ""),
           package: pkg,
           ...(pkgMax !== null ? { packageMax: pkgMax } : {}),
           location: form.location.trim(),

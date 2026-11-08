@@ -4,7 +4,18 @@ import { z } from "zod";
 import { prisma } from "../lib/prisma.js";
 import { audit } from "../lib/audit.js";
 import { authenticate, authorize } from "../middleware/auth.js";
+import multer from "multer";
 import { STARTER_TESTS } from "../data/aptitudeBank.js";
+import { buildTemplate, parseQuestionRows, readRows } from "../services/testImport.js";
+
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 2 * 1024 * 1024 },
+  fileFilter: (_req, file, cb) => {
+    if (/\.(xlsx|csv)$/i.test(file.originalname)) cb(null, true);
+    else cb(new Error("Upload an .xlsx or .csv file") as never, false);
+  }
+});
 
 export const testsRouter = Router();
 testsRouter.use(authenticate);
@@ -30,6 +41,41 @@ testsRouter.post("/starter-bank", authorize(UserRole.ADMIN), async (request, res
   }
   await audit(request.auth!.userId, "CREATE", "aptitude-starter-bank", { created });
   response.status(created.length ? 201 : 200).json({ created, skipped: STARTER_TESTS.length - created.length });
+});
+
+// Excel template for TPC/Admin to fill in.
+testsRouter.get("/template", authorize(UserRole.TPC, UserRole.ADMIN), async (_request, response) => {
+  const buffer = await buildTemplate();
+  response.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+  response.setHeader("Content-Disposition", 'attachment; filename="mock-test-template.xlsx"');
+  response.send(buffer);
+});
+
+// Create a mock test from an Excel/CSV file. With ?preview=1 nothing is saved, the file is only checked.
+testsRouter.post("/import", authorize(UserRole.TPC, UserRole.ADMIN), upload.single("file"), async (request, response) => {
+  if (!request.file) return response.status(400).json({ error: "Choose an .xlsx or .csv file." });
+  const preview = request.query.preview === "1";
+  const title = String(request.body.title ?? "").trim();
+  const duration = Number(request.body.duration);
+  if (!preview) {
+    if (title.length < 3) return response.status(400).json({ error: "Enter a test title (at least 3 characters)." });
+    if (!Number.isInteger(duration) || duration < 1 || duration > 300) return response.status(400).json({ error: "Duration must be between 1 and 300 minutes." });
+  }
+  let rows: string[][];
+  try {
+    rows = await readRows(request.file.buffer, request.file.originalname);
+  } catch {
+    return response.status(400).json({ error: "Could not read the file. Use the template (.xlsx) or a UTF-8 .csv." });
+  }
+  const { questions, errors, sectionConfig } = parseQuestionRows(rows);
+  if (preview || errors.length || questions.length === 0) {
+    return response.status(errors.length || !questions.length ? 422 : 200).json({ ok: errors.length === 0 && questions.length > 0, count: questions.length, sectionConfig, errors });
+  }
+  const test = await prisma.aptitudeTest.create({
+    data: { title, duration, sectionConfig, questions: { create: questions } }
+  });
+  await audit(request.auth!.userId, "CREATE", "aptitude-test-import", { testId: test.id, count: questions.length });
+  response.status(201).json({ ok: true, id: test.id, count: questions.length, sectionConfig, errors: [] });
 });
 
 testsRouter.get("/:id", async (request, response) => {

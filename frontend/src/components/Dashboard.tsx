@@ -16,6 +16,7 @@ import { api, ApiError, ROLE_LABEL, type LoginResponse, type Role, type SessionU
 import { NotificationBell } from "./NotificationBell";
 import { useNotifications } from "../hooks/useNotifications";
 import PracticeView from "./PracticeView";
+import TestUploadCard from "./TestUploadCard";
 import ExportCenter from "./ExportCenter";
 import { useProfileExport } from "../hooks/useProfileExport";
 import ProfileCardExport from "./ProfileCardExport";
@@ -1197,6 +1198,7 @@ function Aptitude({ token, role, tests, flash, onChanged }: { token: string; rol
   return (
     <>
       <PageTitle eyebrow="Aptitude tests" title="Practice and submit mock tests." copy={role === "STUDENT" ? "Attempt placement mock tests and review every answer." : "Monitor test inventory and participation."} />
+      {role !== "STUDENT" && <TestUploadCard token={token} flash={flash} onCreated={onChanged} />}
       <div className="split-grid">
         <section className="card list-card">
           {tests.length === 0 && <EmptyState title="No aptitude tests yet" copy={role === "ADMIN" ? "Load the starter bank (2 mock tests, 60 questions) to get started." : "Your Training & Placement Coordinator has not published a test yet."} />}
