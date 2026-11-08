@@ -3,7 +3,7 @@ import { ApplicationStatus, DriveStatus, UserRole } from "@prisma/client";
 import { prisma } from "../lib/prisma.js";
 import { authenticate } from "../middleware/auth.js";
 import { attachScope, applicationWhere, driveWhere, studentWhere } from "../lib/scope.js";
-import { predictReadiness } from "../services/readiness.js";
+import { readinessForStudent } from "../services/studentReadiness.js";
 
 export const dashboardRouter = Router();
 dashboardRouter.use(authenticate, attachScope);
@@ -21,19 +21,7 @@ dashboardRouter.get("/", async (request, response) => {
       }
     });
     if (!student) return response.status(404).json({ error: "Student profile not found" });
-    const averageAccuracy = student.testResults.length
-      ? student.testResults.reduce((sum, item) => sum + item.accuracy, 0) / student.testResults.length
-      : 0;
-    const readiness = predictReadiness({
-      cgpa: student.cgpa,
-      aptitudeAccuracy: averageAccuracy,
-      codingScore: 72 + Math.min(student.skills.length * 2, 18),
-      communicationScore: 70,
-      projects: student.projectsCount,
-      internships: student.internshipsCount,
-      mockTests: student.mockTestCount,
-      backlogs: student.backlogs
-    });
+    const readiness = await readinessForStudent(student);
     if (Math.abs(student.readinessScore - readiness.score) >= 1) {
       await prisma.student.update({ where: { id: student.id }, data: { readinessScore: readiness.score } });
     }
@@ -45,7 +33,8 @@ dashboardRouter.get("/", async (request, response) => {
         cgpa: student.cgpa, 
         graduationYear: student.graduationYear, 
         skills: student.skills,
-        phone: student.phone,
+        projectNames: student.projectNames,
+        internshipNames: student.internshipNames,
         linkedinUrl: student.linkedinUrl,
         projectsCount: student.projectsCount,
         internshipsCount: student.internshipsCount,
@@ -57,7 +46,7 @@ dashboardRouter.get("/", async (request, response) => {
         applications: student.applications.length,
         interviews: student.applications.filter((item) => item.interview?.status === "SCHEDULED").length,
         offers: student.applications.filter((item) => item.status === ApplicationStatus.SELECTED).length,
-        testAccuracy: Math.round(averageAccuracy)
+        testAccuracy: student.testResults.length ? Math.round(student.testResults.reduce((sum, item) => sum + item.accuracy, 0) / student.testResults.length) : 0
       },
       applications: student.applications.slice(0, 5),
       upcoming: student.applications.flatMap((item) => item.interview ? [{ ...item.interview, company: item.drive.company.name, role: item.drive.role }] : []).slice(0, 5)

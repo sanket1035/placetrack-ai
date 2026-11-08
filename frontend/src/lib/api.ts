@@ -35,6 +35,8 @@ export type SessionUser = {
     linkedinUrl?: string | null;
     projectsCount?: number;
     internshipsCount?: number;
+    projectNames?: string[];
+    internshipNames?: string[];
     resumeUrl?: string | null;
     mockTestCount?: number;
     emailEnabled?: boolean;

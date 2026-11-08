@@ -24,7 +24,13 @@ export function Overview({
   onNavigate: (view: View) => void;
   loading: boolean;
 }) {
-  const readiness = dashboard?.readiness as { score?: number; reasons?: string[] } | undefined;
+  const readiness = dashboard?.readiness as {
+    score?: number;
+    category?: string;
+    recommendation?: string;
+    backlogPenalty?: number;
+    breakdown?: Array<{ key: string; label: string; points: number; max: number; detail: string }>;
+  } | undefined;
   const stats = dashboard?.stats as Record<string, number> | undefined;
 
   // Show skeleton on first load before any data arrives
@@ -175,7 +181,7 @@ export function Overview({
           >
             <Sparkles size={14} style={{ color: "var(--welcome-accent)" }} />
             <span style={{ fontSize: "11px", color: "var(--welcome-accent)", fontWeight: 500 }}>
-              {readiness?.reasons?.[0] ?? "Keep profiles updated before every drive."}
+              {readiness?.recommendation ?? "Keep profiles updated before every drive."}
             </span>
           </div>
         </div>
@@ -196,9 +202,29 @@ export function Overview({
               <Metric label="Applications" value={stats?.applications ?? Number(dashboard?.applications ?? applications.length)} />
               <Metric label="Open drives" value={Number(dashboard?.activeDrives ?? drives.length)} />
               <Metric label="Offers/selected" value={stats?.offers ?? Number(dashboard?.selected ?? 0)} />
-              <p><Sparkles size={14} /> {readiness?.reasons?.[0] ?? "Keep profiles updated before every drive."}</p>
+              <p><Sparkles size={14} /> {readiness?.recommendation ?? "Keep profiles updated before every drive."}</p>
             </div>
           </div>
+          {role === "STUDENT" && readiness?.breakdown && (
+            <details className="readiness-how">
+              <summary>How is this score worked out?</summary>
+              <p>
+                Out of 100, using only what you have done in PlaceTrack. Status: <b>{readiness.category}</b>.
+              </p>
+              <ul>
+                {readiness.breakdown.map((part) => (
+                  <li key={part.key}>
+                    <span><b>{part.label}</b> <small>{part.detail}</small></span>
+                    <span className="readiness-pts">{part.points} / {part.max}</span>
+                  </li>
+                ))}
+                {Boolean(readiness.backlogPenalty) && (
+                  <li><span><b>Backlogs</b> <small>5 points off for each active backlog</small></span><span className="readiness-pts">-{readiness.backlogPenalty}</span></li>
+                )}
+              </ul>
+              <p className="readiness-note">Take aptitude tests and list your projects, internships and skills in Profile to raise it.</p>
+            </details>
+          )}
         </div>
         <div className="stats-grid">
           <Stat icon={<BriefcaseBusiness />} value={String(stats?.applications ?? dashboard?.applications ?? applications.length)} label="Applications" sub="Total submitted" tone="violet" />

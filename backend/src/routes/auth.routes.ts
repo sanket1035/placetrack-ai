@@ -17,6 +17,7 @@ import { attachScope, studentWhere } from "../lib/scope.js";
 import { UserRole } from "@prisma/client";
 import { audit } from "../lib/audit.js";
 import { buildTpcInviteEmail, inviteMail } from "../services/inviteEmail.js";
+import { readinessForStudent } from "../services/studentReadiness.js";
 import { predictReadiness } from "../services/readiness.js";
 
 export const authRouter = Router();
@@ -105,6 +106,21 @@ authRouter.get("/me", authenticate, async (request, response) => {
   response.json(user);
 });
 
+/** Names of projects / internships the student lists. The count is the number of names. */
+const nameList = z.array(z.string().trim().min(2, "Each name needs at least 2 characters").max(80)).max(10);
+const linkedinUrlSchema = z.string().trim().url("Enter a valid LinkedIn link").refine(
+  (value) => /^https:\/\/([a-z0-9-]+\.)?linkedin\.com\/\S+/i.test(value),
+  "Enter your LinkedIn profile link, like https://www.linkedin.com/in/your-name"
+);
+
+function listFields(input: { projects?: string[]; internships?: string[]; linkedinUrl?: string | null }) {
+  return {
+    ...(input.projects !== undefined ? { projectNames: input.projects, projectsCount: input.projects.length } : {}),
+    ...(input.internships !== undefined ? { internshipNames: input.internships, internshipsCount: input.internships.length } : {}),
+    ...(input.linkedinUrl !== undefined ? { linkedinUrl: input.linkedinUrl === "" ? null : input.linkedinUrl } : {})
+  };
+}
+
 authRouter.patch("/me/student", authenticate, async (request, response) => {
   const input = z.object({
     name: z.string().min(2).optional(),
@@ -113,10 +129,9 @@ authRouter.patch("/me/student", authenticate, async (request, response) => {
     graduationYear: z.number().int().min(2024).max(2035).optional(),
     skills: z.array(z.string().min(1)).optional(),
     backlogs: z.number().int().min(0).max(10).optional(),
-    phone: z.string().nullable().optional(),
-    linkedinUrl: z.string().nullable().optional(),
-    projectsCount: z.number().int().min(0).optional(),
-    internshipsCount: z.number().int().min(0).optional(),
+    linkedinUrl: linkedinUrlSchema.nullable().or(z.literal("")).optional(),
+    projects: nameList.optional(),
+    internships: nameList.optional(),
     emailEnabled: z.boolean().optional()
   }).parse(request.body);
 
@@ -137,14 +152,21 @@ authRouter.patch("/me/student", authenticate, async (request, response) => {
     if (input.graduationYear === undefined) return response.status(400).json({ error: "Enter your graduation year." });
   }
 
-  const nextCgpa = input.cgpa ?? student.cgpa;
-  const nextSkills = input.skills ?? student.skills;
-  const nextBacklogs = input.backlogs ?? student.backlogs;
-  const readinessScore = Math.min(100, Math.max(25, Math.round(nextCgpa * 8 + nextSkills.length * 3 - nextBacklogs * 8)));
+  const { projects, internships, linkedinUrl, ...plain } = input;
+  const lists = listFields({ projects, internships, linkedinUrl });
+  const readinessScore = (await readinessForStudent({
+    id: student.id,
+    cgpa: input.cgpa ?? student.cgpa,
+    backlogs: input.backlogs ?? student.backlogs,
+    skills: input.skills ?? student.skills,
+    projectsCount: lists.projectsCount ?? student.projectsCount,
+    internshipsCount: lists.internshipsCount ?? student.internshipsCount,
+    mockTestCount: student.mockTestCount
+  })).score;
 
   const updated = await prisma.student.update({
     where: { id: student.id },
-    data: { ...input, readinessScore, onboarded: true },
+    data: { ...plain, ...lists, readinessScore, onboarded: true },
     include: { user: { select: { id: true, email: true, role: true } } }
   });
   await audit(request.auth!.userId, "UPDATE", "student-profile", { studentId: student.id });
@@ -181,7 +203,7 @@ authRouter.patch("/students/:id", authenticate, authorize(UserRole.TPC, UserRole
   }
 
   const next = { ...student, ...Object.fromEntries(Object.entries(input).filter(([, value]) => value !== undefined)) } as typeof student;
-  const readinessScore = Math.min(100, Math.max(25, Math.round(next.cgpa * 8 + student.skills.length * 3 - next.backlogs * 8)));
+  const readinessScore = (await readinessForStudent({ ...student, cgpa: next.cgpa, backlogs: next.backlogs })).score;
   const onboarded = student.onboarded || (next.branch !== "Undeclared" && next.cgpa > 0);
   const updated = await prisma.student.update({
     where: { id },
@@ -278,10 +300,12 @@ authRouter.patch("/users/:id", authenticate, authorize(UserRole.ADMIN), async (r
   if (updatedUser.role === "STUDENT") {
     const student = await prisma.student.findUnique({ where: { userId: id } });
     if (student) {
-      const nextCgpa = input.cgpa ?? student.cgpa;
-      const nextSkills = input.skills ?? student.skills;
-      const nextBacklogs = input.backlogs ?? student.backlogs;
-      const readinessScore = Math.min(100, Math.max(25, Math.round(nextCgpa * 8 + nextSkills.length * 3 - nextBacklogs * 8)));
+      const readinessScore = (await readinessForStudent({
+        ...student,
+        cgpa: input.cgpa ?? student.cgpa,
+        skills: input.skills ?? student.skills,
+        backlogs: input.backlogs ?? student.backlogs
+      })).score;
       
       await prisma.student.update({
         where: { id: student.id },
@@ -506,7 +530,7 @@ authRouter.post("/bulk-import", authenticate, authorize(UserRole.TPC, UserRole.A
         continue;
       }
 
-      const readinessScore = Math.min(95, Math.max(35, Math.round(cgpa * 8 + skills.length * 3 - backlogs * 8)));
+      const readinessScore = predictReadiness({ cgpa, aptitudeAccuracy: 0, testsTaken: 0, skills: skills.length, projects: 0, internships: 0, backlogs }).score;
 
       await prisma.user.create({
         data: {
@@ -547,52 +571,29 @@ authRouter.post("/bulk-import", authenticate, authorize(UserRole.TPC, UserRole.A
 
 const profilePatchSchema = z.object({
   skills: z.array(z.string()).optional(),
-  phone: z.string().nullable().optional(),
-  linkedinUrl: z.string().url().nullable().or(z.literal("")).optional(),
-  projectsCount: z.number().int().min(0).optional(),
-  internshipsCount: z.number().int().min(0).optional()
+  linkedinUrl: linkedinUrlSchema.nullable().or(z.literal("")).optional(),
+  projects: nameList.optional(),
+  internships: nameList.optional()
 });
 
 authRouter.patch("/profile", authenticate, authorize(UserRole.STUDENT), async (request, response) => {
   const input = profilePatchSchema.parse(request.body);
-  
-  const student = await prisma.student.findUnique({
-    where: { userId: request.auth!.userId },
-    include: { testResults: true }
-  });
+
+  const student = await prisma.student.findUnique({ where: { userId: request.auth!.userId } });
   if (!student) {
     return response.status(404).json({ error: "Student profile not found" });
   }
 
-  const updateData: any = {};
+  const lists = listFields(input);
+  const updateData: any = { ...lists };
   if (input.skills !== undefined) updateData.skills = input.skills;
-  if (input.phone !== undefined) updateData.phone = input.phone;
-  if (input.linkedinUrl !== undefined) {
-    updateData.linkedinUrl = input.linkedinUrl === "" ? null : input.linkedinUrl;
-  }
-  if (input.projectsCount !== undefined) updateData.projectsCount = input.projectsCount;
-  if (input.internshipsCount !== undefined) updateData.internshipsCount = input.internshipsCount;
 
-  const updatedSkills = input.skills ?? student.skills;
-  const updatedProjectsCount = input.projectsCount ?? student.projectsCount;
-  const updatedInternshipsCount = input.internshipsCount ?? student.internshipsCount;
-
-  const averageAccuracy = student.testResults.length
-    ? student.testResults.reduce((sum, item) => sum + item.accuracy, 0) / student.testResults.length
-    : 0;
-
-  const readiness = predictReadiness({
-    cgpa: student.cgpa,
-    aptitudeAccuracy: averageAccuracy,
-    codingScore: 72 + Math.min(updatedSkills.length * 2, 18),
-    communicationScore: 70,
-    projects: updatedProjectsCount,
-    internships: updatedInternshipsCount,
-    mockTests: student.mockTestCount,
-    backlogs: student.backlogs
-  });
-
-  updateData.readinessScore = readiness.score;
+  updateData.readinessScore = (await readinessForStudent({
+    ...student,
+    skills: input.skills ?? student.skills,
+    projectsCount: lists.projectsCount ?? student.projectsCount,
+    internshipsCount: lists.internshipsCount ?? student.internshipsCount
+  })).score;
 
   const updatedStudent = await prisma.student.update({
     where: { id: student.id },
