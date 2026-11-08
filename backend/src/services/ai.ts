@@ -20,7 +20,18 @@ function cleanJsonResponse(text: string): string {
   return cleaned.trim();
 }
 
-export const GROQ_DEFAULT_MODEL = "llama-3.3-70b-versatile";
+// llama-3.3-70b-versatile was retired by Groq on 16 Aug 2026 (404 since). Override with GROQ_MODEL if needed.
+/** Short provider error text for logs, so a 404 says which model or key was rejected. */
+async function errorDetail(response: Response): Promise<string> {
+  try {
+    const text = (await response.text()).replace(/\s+/g, " ").trim().slice(0, 200);
+    return text ? `: ${text}` : "";
+  } catch {
+    return "";
+  }
+}
+
+export const GROQ_DEFAULT_MODEL = "openai/gpt-oss-120b";
 
 /** Groq (OpenAI-compatible chat API). Used first when GROQ_API_KEY is set. */
 async function callGroq(prompt: string) {
@@ -39,7 +50,7 @@ async function callGroq(prompt: string) {
       temperature: 0.2
     })
   });
-  if (!response.ok) throw new Error(`Groq failed with ${response.status}`);
+  if (!response.ok) throw new Error(`Groq failed with ${response.status}${await errorDetail(response)}`);
   const body = await response.json() as { choices?: Array<{ message?: { content?: string } }> };
   const text = body.choices?.[0]?.message?.content;
   if (!text) return null;
@@ -71,7 +82,7 @@ async function callGemini(prompt: string) {
       generationConfig: { responseMimeType: "application/json", temperature: 0.2 }
     })
   });
-  if (!response.ok) throw new Error(`Gemini failed with ${response.status}`);
+  if (!response.ok) throw new Error(`Gemini failed with ${response.status} (model ${model})${await errorDetail(response)}`);
   const body = await response.json() as { candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }> };
   const text = body.candidates?.[0]?.content?.parts?.[0]?.text;
   if (!text) return null;
