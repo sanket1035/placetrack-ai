@@ -37,6 +37,9 @@ const allowedOrigins = new Set([
   "http://127.0.0.1:3001"
 ]);
 
+// Render (and Vercel) put one reverse proxy in front of the API. Without this, express-rate-limit sees the
+// proxy's address for every request (one shared limit for all users) and logs ERR_ERL_UNEXPECTED_X_FORWARDED_FOR.
+app.set("trust proxy", Number(process.env.TRUST_PROXY_HOPS ?? 1));
 app.use(helmet({ crossOriginResourcePolicy: { policy: "cross-origin" } }));
 // gzip: the drives and applications lists are 30-100 KB of JSON, so this cuts transfer time on slow links.
 app.use(compression());
