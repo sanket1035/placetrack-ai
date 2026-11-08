@@ -52,6 +52,7 @@ const FAQ = [
 export function Landing() {
   const [stats, setStats] = useState<PublicStats | null>(null);
   const [showAll, setShowAll] = useState(false);
+  const [menu, setMenu] = useState(false);
 
   useEffect(() => {
     fetch(`${API_BASE}/api/public/stats`).then((r) => (r.ok ? r.json() : null)).then(setStats).catch(() => setStats(null));
@@ -71,7 +72,8 @@ export function Landing() {
           <img src="/brand/kkw-society.png" alt="Karmaveer Kakasaheb Wagh Education Society" width={60} height={36} />
           <span>Place<mark>Track</mark></span>
         </Link>
-        <nav aria-label="Sections">
+        <button type="button" className="lp-burger" aria-label="Menu" aria-expanded={menu} onClick={() => setMenu(!menu)}><span /><span /><span /></button>
+        <nav aria-label="Sections" className={menu ? "open" : ""} onClick={() => setMenu(false)}>
           <a href="#features">Features</a>
           <a href="#how">How it works</a>
           {showNumbers && <a href="#numbers">Numbers</a>}
