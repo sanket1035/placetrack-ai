@@ -3,12 +3,15 @@ import { Loader2, Plus, X } from "lucide-react";
 import { api } from "@/lib/api";
 import PageTitle from "./PageTitle";
 
-type Recruiter = { id: string; name: string };
+type Recruiter = { id: string; name: string; category: string };
+const CATEGORIES = ["Core companies", "IT companies", "Services", "Government", "Other"];
 
 export function RecruitersManager({ token, flash }: { token: string; flash: (message: string) => void }) {
   const [items, setItems] = useState<Recruiter[]>([]);
   const [text, setText] = useState("");
+  const [category, setCategory] = useState("Other");
   const [saving, setSaving] = useState(false);
+  const [loadingList, setLoadingList] = useState(false);
 
   const load = useCallback(async () => {
     try { setItems(await api<Recruiter[]>("/api/recruiters", token)); }
@@ -21,7 +24,7 @@ export function RecruitersManager({ token, flash }: { token: string; flash: (mes
     if (names.length === 0) { flash("Paste at least one company name."); return; }
     setSaving(true);
     try {
-      const result = await api<{ added: number; skipped: number }>("/api/recruiters/bulk", token, { method: "POST", body: JSON.stringify({ names }) });
+      const result = await api<{ added: number; skipped: number }>("/api/recruiters/bulk", token, { method: "POST", body: JSON.stringify({ names, category }) });
       flash(`Added ${result.added} companies${result.skipped ? `, ${result.skipped} already in the list` : ""}.`);
       setText("");
       await load();
@@ -29,6 +32,19 @@ export function RecruitersManager({ token, flash }: { token: string; flash: (mes
       flash(error instanceof Error ? error.message : "Could not add companies");
     } finally {
       setSaving(false);
+    }
+  };
+
+  const loadPublished = async () => {
+    setLoadingList(true);
+    try {
+      const result = await api<{ added: number }>("/api/recruiters/starter", token, { method: "POST" });
+      flash(result.added ? `Added ${result.added} recruiters from the college website list.` : "The college website list is already loaded.");
+      await load();
+    } catch (error) {
+      flash(error instanceof Error ? error.message : "Could not load the list");
+    } finally {
+      setLoadingList(false);
     }
   };
 
@@ -45,6 +61,12 @@ export function RecruitersManager({ token, flash }: { token: string; flash: (mes
     <>
       <PageTitle eyebrow="Landing page" title="Our past recruiters." copy="Every company that has hired from the college. These names show on the public landing page, whether or not the drive was created in PlaceTrack." />
       <section className="card form-card" style={{ display: "grid", gap: 12 }}>
+        <button type="button" className="ghost-button" style={{ width: "fit-content" }} onClick={loadPublished} disabled={loadingList}>
+          {loadingList ? <Loader2 className="spin" size={16} /> : <Plus size={16} />} Load the recruiter list from the college website
+        </button>
+        <label>Sector
+          <select value={category} onChange={(e) => setCategory(e.target.value)}>{CATEGORIES.map((name) => <option key={name}>{name}</option>)}</select>
+        </label>
         <label>Add companies (one per line, or separated by commas)
           <textarea rows={6} placeholder={"Infosys\nTCS\nWipro"} value={text} onChange={(e) => setText(e.target.value)} />
         </label>
@@ -54,15 +76,20 @@ export function RecruitersManager({ token, flash }: { token: string; flash: (mes
       </section>
       <section className="card" style={{ marginTop: 16, padding: 20 }}>
         <strong>{items.length} companies</strong>
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 12 }}>
-          {items.map((item) => (
-            <span key={item.id} style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "6px 8px 6px 14px", border: "1px solid var(--line)", borderRadius: 999, fontSize: 13, fontWeight: 600 }}>
-              {item.name}
-              <button type="button" aria-label={`Remove ${item.name}`} onClick={() => remove(item)} style={{ all: "unset", cursor: "pointer", display: "grid", placeItems: "center", width: 20, height: 20, borderRadius: 999 }}><X size={13} /></button>
-            </span>
-          ))}
-          {items.length === 0 && <span style={{ color: "var(--muted)", fontSize: 13 }}>No companies yet.</span>}
-        </div>
+        {Array.from(new Set(items.map((item) => item.category))).map((group) => (
+          <div key={group} style={{ marginTop: 16 }}>
+            <small style={{ color: "var(--muted)", fontWeight: 700, textTransform: "uppercase", letterSpacing: ".08em" }}>{group}</small>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 8 }}>
+              {items.filter((item) => item.category === group).map((item) => (
+                <span key={item.id} style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "6px 8px 6px 14px", border: "1px solid var(--line)", borderRadius: 999, fontSize: 13, fontWeight: 600 }}>
+                  {item.name}
+                  <button type="button" aria-label={`Remove ${item.name}`} onClick={() => remove(item)} style={{ all: "unset", cursor: "pointer", display: "grid", placeItems: "center", width: 20, height: 20, borderRadius: 999 }}><X size={13} /></button>
+                </span>
+              ))}
+            </div>
+          </div>
+        ))}
+        {items.length === 0 && <p style={{ color: "var(--muted)", fontSize: 13 }}>No companies yet. Use the button above to load the college list.</p>}
       </section>
     </>
   );

@@ -31,10 +31,12 @@ publicRouter.get("/stats", async (_request, response) => {
   });
 });
 
-// Names only. Maintained by the admin (see recruiters.routes.ts).
+// Names only, grouped by sector. Maintained by the admin (see recruiters.routes.ts).
 publicRouter.get("/recruiters", async (_request, response) => {
-  const rows = await prisma.recruiter.findMany({ orderBy: { name: "asc" }, select: { name: true } });
-  response.json(rows.map((row) => row.name));
+  const rows = await prisma.recruiter.findMany({ orderBy: { name: "asc" }, select: { name: true, category: true } });
+  const groups: Record<string, string[]> = {};
+  for (const row of rows) (groups[row.category] ??= []).push(row.name);
+  response.json(groups);
 });
 
 const inquiryLimiter = rateLimit({

@@ -194,6 +194,7 @@ model TestResult {
 model Recruiter {
   id        String   @id @default(cuid())
   name      String   @unique
+  category  String   @default("Other")
   createdAt DateTime @default(now())
 }
 

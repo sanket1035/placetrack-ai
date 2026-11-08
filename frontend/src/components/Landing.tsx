@@ -28,6 +28,26 @@ const STEPS = [
   { n: "03", title: "Apply and track", text: "See drives you are eligible for, apply through the college form and follow every stage." }
 ];
 
+// Published by the college on kkwagh.edu.in (placement page and placement brochure 2025-26).
+const FIGURES = [
+  ["600+", "Students placed", "A.Y. 2025-26"],
+  ["200+", "Recruiters", "A.Y. 2025-26"],
+  ["25 LPA", "Highest package", "A.Y. 2025-26"],
+  ["5.5 LPA", "Average package", "A.Y. 2025-26"],
+  ["1200+", "Internships", "A.Y. 2025-26"],
+  ["15+", "Global internships", "A.Y. 2025-26"]
+];
+const TREND: Array<[string, number]> = [["2017-18", 461], ["2018-19", 447], ["2019-20", 446], ["2020-21", 555], ["2021-22", 739], ["2022-23", 614], ["2023-24", 642], ["2024-25", 700]];
+const ACCREDITATIONS = ["Autonomous since A.Y. 2022-23", "Affiliated to SPPU, Pune", "AICTE approved", "8 programs accredited by NBA", "NAAC Grade A", "UGC 2(f) and 12(B)"];
+
+const ACHIEVERS = [
+  ["overall", "Placements in academic year 2025-26: 600 students placed, 25 LPA highest and 5.5 LPA average package, 200+ recruiters"],
+  ["electrical-1", "Department of Electrical Engineering placement achievers 2025-26"],
+  ["electrical-2", "Department of Electrical Engineering placement achievers 2025-26"],
+  ["mechanical", "Department of Mechanical Engineering placement achievers 2025-26"],
+  ["chemical", "Department of Chemical Engineering placement achievers 2025-26"]
+];
+
 const FAQ = [
   ["Who can sign in?", "Students sign in with their college Google account. Coordinators are invited by the admin for their department."],
   ["How is the readiness score worked out?", "Only from real data: CGPA, aptitude test accuracy, mock tests taken, projects, internships, skills and active backlogs. The breakdown is shown on your dashboard."],
@@ -37,16 +57,18 @@ const FAQ = [
 
 export function Landing() {
   const [stats, setStats] = useState<PublicStats | null>(null);
-  const [recruiters, setRecruiters] = useState<string[]>([]);
+  const [recruiters, setRecruiters] = useState<Record<string, string[]>>({});
   const [form, setForm] = useState({ name: "", email: "", phone: "", message: "", website: "" });
   const [sending, setSending] = useState(false);
   const [note, setNote] = useState<{ ok: boolean; text: string } | null>(null);
 
   useEffect(() => {
     fetch(`${API_BASE}/api/public/stats`).then((r) => (r.ok ? r.json() : null)).then(setStats).catch(() => setStats(null));
-    fetch(`${API_BASE}/api/public/recruiters`).then((r) => (r.ok ? r.json() : [])).then((list) => setRecruiters(Array.isArray(list) ? list : [])).catch(() => setRecruiters([]));
+    fetch(`${API_BASE}/api/public/recruiters`).then((r) => (r.ok ? r.json() : {})).then((groups) => setRecruiters(groups && typeof groups === "object" && !Array.isArray(groups) ? (groups as Record<string, string[]>) : {})).catch(() => setRecruiters({}));
   }, []);
 
+  const recruiterGroups = Object.entries(recruiters).filter(([, names]) => names.length > 0);
+  const recruiterCount = recruiterGroups.reduce((sum, [, names]) => sum + names.length, 0);
   const showNumbers = Boolean(stats?.enabled && (stats.students ?? 0) > 0);
 
   const send = async (event: React.FormEvent) => {
@@ -75,10 +97,11 @@ export function Landing() {
           <span>Place<mark>Track</mark></span>
         </Link>
         <nav aria-label="Sections">
+          <a href="#achievers">Achievers</a>
           <a href="#features">Features</a>
           <a href="#how">How it works</a>
           {showNumbers && <a href="#numbers">Numbers</a>}
-          {recruiters.length > 0 && <a href="#recruiters">Recruiters</a>}
+          {recruiterCount > 0 && <a href="#recruiters">Recruiters</a>}
           <a href="#faq">FAQ</a>
           <a href="#inquiry">Inquiry</a>
         </nav>
@@ -86,9 +109,10 @@ export function Landing() {
       </header>
 
       <section className="lp-hero">
+        <div className="lp-hero-img" aria-hidden="true" />
         <span className="lp-chip"><GraduationCap size={14} /> Training &amp; Placement Portal</span>
         <h1>Campus placements, <mark>tracked end to end.</mark></h1>
-        <p>One place for drives, applications, resume checks, mock tests and interview practice. Built for KKWagh students, coordinators and the placement cell.</p>
+        <p>One place for drives, applications, resume checks, mock tests and interview practice. Built for the students, coordinators and Training &amp; Placement Cell of K K Wagh Institute of Engineering Education &amp; Research, Nashik.</p>
         <div className="lp-cta">
           <Link href="/login" className="lp-btn lp-btn-dark">Login with Google <ArrowRight size={16} /></Link>
           <a href="#features" className="lp-btn lp-btn-line">See what is inside</a>
@@ -107,6 +131,38 @@ export function Landing() {
             <p>{text}</p>
           </article>
         ))}
+      </section>
+
+      <section id="figures" className="lp-section">
+        <span className="lp-eyebrow">Placements at K K Wagh</span>
+        <h2>The college&apos;s placement record, <mark>year after year.</mark></h2>
+        <div className="lp-stats">
+          {FIGURES.map(([value, label, sub]) => (
+            <div key={label} className="lp-stat"><strong>{value}</strong><span>{label}</span><small>{sub}</small></div>
+          ))}
+        </div>
+        <div className="lp-trend" role="img" aria-label="Total placements per year, 2017-18 to 2024-25">
+          <h3>Total placements by year</h3>
+          <div className="lp-bars">
+            {TREND.map(([year, count]) => (
+              <div key={year} className="lp-bar"><span style={{ height: `${(count / 739) * 100}%` }}><b>{count}</b></span><small>{year}</small></div>
+            ))}
+          </div>
+        </div>
+        <ul className="lp-accred">{ACCREDITATIONS.map((item) => <li key={item}>{item}</li>)}</ul>
+        <p className="lp-source">Source: kkwagh.edu.in, placement page and placement brochure 2025-26. 2024-25 is as on December 2025.</p>
+      </section>
+
+      <section id="achievers" className="lp-section lp-alt">
+        <span className="lp-eyebrow">Placement achievers 2025-26</span>
+        <h2>Our students, going places.</h2>
+        <div className="lp-gallery">
+          {ACHIEVERS.map(([file, alt]) => (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img key={file} src={`/landing/achievers-${file}.jpg`} alt={alt} loading="lazy" />
+          ))}
+        </div>
+        <p className="lp-source">Images published by the Training &amp; Placement Cell, K K Wagh IEER.</p>
       </section>
 
       <section id="features" className="lp-section">
@@ -156,11 +212,16 @@ export function Landing() {
         </section>
       )}
 
-      {recruiters.length > 0 && (
+      {recruiterCount > 0 && (
         <section id="recruiters" className="lp-section">
           <span className="lp-eyebrow">Our recruiters</span>
           <h2>Companies that have hired from us.</h2>
-          <ul className="lp-recruiters-list">{recruiters.map((name) => <li key={name}>{name}</li>)}</ul>
+          {recruiterGroups.map(([group, names]) => (
+            <div key={group} className="lp-rgroup">
+              <h3>{group} <small>{names.length}</small></h3>
+              <ul className="lp-recruiters-list">{names.map((name) => <li key={name}>{name}</li>)}</ul>
+            </div>
+          ))}
         </section>
       )}
 
@@ -200,7 +261,12 @@ export function Landing() {
         <div>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/brand/kkw-society.png" alt="Karmaveer Kakasaheb Wagh Education Society" width={68} height={40} />
-          <p>PlaceTrack · Karmaveer Kakasaheb Wagh Education Society</p>
+          <p>PlaceTrack · K K Wagh Institute of Engineering Education &amp; Research, Nashik</p>
+          <p className="lp-contact">
+            Training &amp; Placement Cell<br />
+            <a href="mailto:tpo-engg@kkwagh.edu.in">tpo-engg@kkwagh.edu.in</a><br />
+            <a href="tel:02532517504">0253-2517504</a> · <a href="tel:02532512876">0253-2512876</a>
+          </p>
         </div>
         <nav aria-label="Footer">
           <Link href="/login">Login</Link>

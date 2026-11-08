@@ -17,6 +17,7 @@ describe("PlaceTrack AI - Backend Integration Tests", () => {
 
   beforeAll(async () => {
     // 1. Clean up existing data in correct sequence to prevent foreign key errors
+    await prisma.recruiter.deleteMany();
     await prisma.questionAttempt.deleteMany();
     await prisma.interviewQuestion.deleteMany();
     await prisma.interview.deleteMany();
@@ -702,8 +703,13 @@ describe("PlaceTrack AI - Backend Integration Tests", () => {
       const added = await request(app).post("/api/recruiters/bulk").set(auth).send({ names: ["Infosys", "  tcs ", "infosys", "", "X"] });
       expect(added.status).toBe(201);
       expect(added.body).toEqual({ added: 2, skipped: 1 });
+      const starter = await request(app).post("/api/recruiters/starter").set(auth);
+      expect(starter.status).toBe(201);
+      expect(starter.body.added).toBeGreaterThan(100);
       const publicList = await request(app).get("/api/public/recruiters");
-      expect(publicList.body).toEqual(["Infosys", "tcs"]);
+      expect(publicList.body.Other).toEqual(["Infosys", "tcs"]);
+      expect(publicList.body["IT companies"]).toContain("Zensar Technologies");
+      expect(Object.keys(publicList.body)).toEqual(expect.arrayContaining(["Core companies", "Services", "Government"]));
     });
   });
 });
