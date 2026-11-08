@@ -123,7 +123,7 @@
 .lp { --wrap: min(1320px, calc(100% - 48px)); --pad-x: max(24px, calc((100% - 1320px) / 2)); }
 .lp-nav { padding: 18px var(--pad-x); }
 .lp-hero { padding-left: var(--pad-x); padding-right: var(--pad-x); }
-.lp-roles { width: var(--wrap); margin: -56px auto 0; position: relative; z-index: 2; }
+.lp-roles { width: var(--wrap); margin: 40px auto 0; }
 .lp-section { width: 100%; padding: clamp(56px, 9vw, 112px) var(--pad-x); }
 .lp-section.lp-alt { background: #F2F0E3; }
 #figures { background: var(--cream); }
@@ -141,7 +141,7 @@
   .lp-nav nav { display: none; position: absolute; top: 100%; left: 16px; right: 16px; flex-direction: column; gap: 0; background: var(--forest); border-radius: 16px; padding: 8px; box-shadow: 0 12px 32px rgba(0,0,0,.3); }
   .lp-nav nav.open { display: flex; }
   .lp-nav nav a { padding: 14px 16px; font-size: 16px; text-shadow: none; }
-  .lp-roles { margin-top: -32px; }
+  .lp-roles { margin-top: 24px; }
   .lp-grid, .lp-steps, .lp-roles { grid-template-columns: 1fr; }
   .lp-hero { min-height: 100svh; padding: 110px 16px 64px; }
   .lp-foot { flex-direction: column; align-items: flex-start; }
