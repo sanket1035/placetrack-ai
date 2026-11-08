@@ -679,4 +679,13 @@ describe("PlaceTrack AI - Backend Integration Tests", () => {
       expect(Array.isArray(overview.body.atRisk)).toBe(true);
     });
   });
+
+  describe("public landing endpoints", () => {
+    it("keeps stats off until enabled", async () => {
+      const stats = await request(app).get("/api/public/stats");
+      expect(stats.status).toBe(200);
+      expect(stats.body).toEqual({ enabled: false });
+    });
+  });
+
 });

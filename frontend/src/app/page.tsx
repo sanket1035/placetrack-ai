@@ -1,5 +1,5 @@
-import { Dashboard } from "@/components/Dashboard";
+import { HomeGate } from "@/components/HomeGate";
 
 export default function Home() {
-  return <Dashboard />;
+  return <HomeGate />;
 }
