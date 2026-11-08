@@ -159,9 +159,3 @@ export const PUBLISHED_RECRUITERS: Record<string, string[]> = {
   ]
 };
 
-/** Shown first on the landing page. Names must match entries above exactly. */
-export const TOP_RECRUITERS = [
-  "Tata Consultancy Services", "Infosys Ltd", "Wipro Technologies", "Cognizant", "Capgemini", "IBM India Pvt Ltd",
-  "Deloitte India", "Persistent Systems Limited", "KPIT Technologies", "Zensar Technologies", "BOSCH Ltd", "Siemens",
-  "Tata Motors Ltd", "Mahindra & Mahindra Ltd", "Schneider Electric, Nashik", "ABB India Ltd."
-];

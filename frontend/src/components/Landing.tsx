@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ArrowRight, BarChart3, Bell, BookOpenCheck, Building2, FileScan, GraduationCap, Mic, ShieldCheck, Users } from "lucide-react";
-import { PUBLISHED_RECRUITERS, TOP_RECRUITERS } from "../data/recruiters";
+import { PUBLISHED_RECRUITERS } from "../data/recruiters";
 import "./landing.css";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
@@ -41,13 +41,6 @@ const FIGURES = [
 const TREND: Array<[string, number]> = [["2017-18", 461], ["2018-19", 447], ["2019-20", 446], ["2020-21", 555], ["2021-22", 739], ["2022-23", 614], ["2023-24", 642], ["2024-25", 700]];
 const ACCREDITATIONS = ["Autonomous since A.Y. 2022-23", "Affiliated to SPPU, Pune", "AICTE approved", "8 programs accredited by NBA", "NAAC Grade A", "UGC 2(f) and 12(B)"];
 
-const ACHIEVERS = [
-  ["overall", "Placements in academic year 2025-26: 600 students placed, 25 LPA highest and 5.5 LPA average package, 200+ recruiters"],
-  ["electrical-1", "Department of Electrical Engineering placement achievers 2025-26"],
-  ["electrical-2", "Department of Electrical Engineering placement achievers 2025-26"],
-  ["mechanical", "Department of Mechanical Engineering placement achievers 2025-26"],
-  ["chemical", "Department of Chemical Engineering placement achievers 2025-26"]
-];
 
 const FAQ = [
   ["Who can sign in?", "Students sign in with their college Google account. Coordinators are invited by the admin for their department."],
@@ -78,7 +71,6 @@ export function Landing() {
           <span>Place<mark>Track</mark></span>
         </Link>
         <nav aria-label="Sections">
-          <a href="#achievers">Achievers</a>
           <a href="#features">Features</a>
           <a href="#how">How it works</a>
           {showNumbers && <a href="#numbers">Numbers</a>}
@@ -134,18 +126,6 @@ export function Landing() {
         <p className="lp-source">Source: kkwagh.edu.in, placement page and placement brochure 2025-26. 2024-25 is as on December 2025.</p>
       </section>
 
-      <section id="achievers" className="lp-section lp-alt">
-        <span className="lp-eyebrow">Placement achievers 2025-26</span>
-        <h2>Our students, going places.</h2>
-        <div className="lp-gallery">
-          {ACHIEVERS.map(([file, alt]) => (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img key={file} src={`/landing/achievers-${file}.jpg`} alt={alt} loading="lazy" />
-          ))}
-        </div>
-        <p className="lp-source">Images published by the Training &amp; Placement Cell, K K Wagh IEER.</p>
-      </section>
-
       <section id="features" className="lp-section">
         <span className="lp-eyebrow">Features</span>
         <h2>Everything for the placement season, <mark>in one place.</mark></h2>
@@ -196,14 +176,8 @@ export function Landing() {
       <section id="recruiters" className="lp-section">
         <span className="lp-eyebrow">Our recruiters</span>
         <h2>Companies that hire from KKWagh.</h2>
-        <div className="lp-top-recruiters">
-          {TOP_RECRUITERS.map((name) => (
-            <div key={name} className="lp-recruiter-tile">
-              <span className="lp-mono">{name.replace(/[^A-Za-z ]/g, "").split(" ").filter(Boolean).slice(0, 2).map((w) => w[0]).join("").toUpperCase()}</span>
-              <b>{name.replace(/ (Ltd\.?|Pvt Ltd|Limited|India)$/i, "")}</b>
-            </div>
-          ))}
-        </div>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img className="lp-logo-wall" src="/landing/recruiters.png" alt="Logos of top recruiters: ABB, ADP, Adani, Bosch, CEAT, CG, DMart, Goodyear, JSW, KSB, Mahindra, Ring Plus Aqua, Tata, FinIQ, IBM, Infosys, Jio, Wipro, Indian Army, Indian Navy" loading="lazy" />
         <button type="button" className="lp-btn lp-btn-dark lp-more" aria-expanded={showAll} onClick={() => setShowAll(!showAll)}>
           {showAll ? "− Show fewer" : `+ Show all ${recruiterCount} recruiters`}
         </button>

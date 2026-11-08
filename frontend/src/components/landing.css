@@ -89,8 +89,6 @@
 .lp-contact { line-height: 1.8; } .lp-contact a { text-decoration: underline; text-underline-offset: 3px; }
 @media (max-width: 860px) { .lp-bars { gap: 5px; height: 150px; } .lp-bar b { font-size: 10px; } .lp-bar small { font-size: 9px; } .lp-hero { padding: 64px 16px 48px; } }
 
-.lp-gallery { display: flex; gap: 16px; overflow-x: auto; scroll-snap-type: x mandatory; padding: 4px 2px 14px; }
-.lp-gallery img { flex: 0 0 min(640px, 88%); width: min(640px, 88%); height: auto; border-radius: 16px; border: 1.5px solid var(--line); scroll-snap-align: start; background: #fff; }
 
 .lp-contact-grid { display: grid; grid-template-columns: 1fr 1.6fr; gap: 20px; align-items: stretch; }
 .lp-contact-card { background: #fff; border: 1.5px solid var(--line); border-radius: 18px; padding: 24px; }
@@ -98,9 +96,6 @@
 .lp-map { width: 100%; min-height: 320px; border: 1.5px solid var(--line); border-radius: 18px; }
 @media (max-width: 760px) { .lp-contact-grid { grid-template-columns: 1fr; } }
 
-.lp-top-recruiters { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 14px; margin-bottom: 20px; }
-.lp-recruiter-tile { display: flex; align-items: center; gap: 12px; background: #fff; border: 1.5px solid var(--line); border-radius: 16px; padding: 14px; }
-.lp-recruiter-tile b { font-size: 14px; line-height: 1.25; }
-.lp-mono { flex: none; width: 42px; height: 42px; border-radius: 12px; background: var(--yellow, #FFE859); color: var(--forest); display: grid; place-items: center; font: 700 14px "JetBrains Mono", monospace; }
 .lp-more { cursor: pointer; }
 .lp-recruiters-group { margin-top: 24px; }
+.lp-logo-wall { display: block; width: 100%; height: auto; background: #fff; border: 1.5px solid var(--line); border-radius: 18px; padding: 12px; margin-bottom: 20px; }
