@@ -1,17 +1,15 @@
 "use client";
 
 import { CheckCircle2, AlertCircle, ArrowRight } from "lucide-react";
+import { isLinkedinUrl } from "@/lib/profile";
 
 interface StudentProfile {
   cgpa?: number;
   branch?: string;
   skills?: string[];
-  phone?: string | null;
   linkedinUrl?: string | null;
-  projectsCount?: number;
-  internshipsCount?: number;
-  mockTestCount?: number;
-  resumeUrl?: string | null;
+  projectNames?: string[];
+  internshipNames?: string[];
 }
 
 interface ProfileCompletenessProps {
@@ -21,15 +19,12 @@ interface ProfileCompletenessProps {
 
 export default function ProfileCompleteness({ student, onEditProfile }: ProfileCompletenessProps) {
   const checks = [
-    { key: "cgpa", label: "CGPA Filled", weight: 15, isComplete: (student.cgpa ?? 0) > 0 },
-    { key: "branch", label: "Branch Set", weight: 5, isComplete: !!student.branch },
-    { key: "phone", label: "Phone Number", weight: 5, isComplete: !!student.phone },
-    { key: "skills", label: "Skills (min 3)", weight: 20, isComplete: (student.skills ?? []).length >= 3 },
-    { key: "projectsCount", label: "Projects Count > 0", weight: 15, isComplete: (student.projectsCount ?? 0) > 0 },
-    { key: "internshipsCount", label: "Internships Count > 0", weight: 15, isComplete: (student.internshipsCount ?? 0) > 0 },
-    { key: "mockTestCount", label: "Mock Tests Taken > 0", weight: 10, isComplete: (student.mockTestCount ?? 0) > 0 },
-    { key: "linkedinUrl", label: "LinkedIn URL", weight: 5, isComplete: !!student.linkedinUrl },
-    { key: "resumeUrl", label: "Resume Uploaded", weight: 10, isComplete: !!student.resumeUrl }
+    { key: "cgpa", label: "CGPA", weight: 20, isComplete: (student.cgpa ?? 0) > 0 },
+    { key: "branch", label: "Branch", weight: 10, isComplete: !!student.branch && student.branch !== "Undeclared" },
+    { key: "skills", label: "At least 3 skills", weight: 25, isComplete: (student.skills ?? []).length >= 3 },
+    { key: "projects", label: "Projects (name them)", weight: 15, isComplete: (student.projectNames ?? []).length > 0 },
+    { key: "internships", label: "Internships (name them)", weight: 15, isComplete: (student.internshipNames ?? []).length > 0 },
+    { key: "linkedinUrl", label: "LinkedIn link", weight: 15, isComplete: isLinkedinUrl(student.linkedinUrl ?? "") }
   ];
 
   const totalPercentage = checks.reduce((sum, item) => sum + (item.isComplete ? item.weight : 0), 0);
@@ -106,7 +101,7 @@ export default function ProfileCompleteness({ student, onEditProfile }: ProfileC
                     e.currentTarget.style.color = "var(--muted)";
                   }}
                 >
-                  <span>+</span> {item.label.replace(" Filled", "").replace(" Set", "").replace(" Taken > 0", "").replace(" > 0", "").replace(" Uploaded", "")}
+                  <span>+</span> {item.label}
                 </button>
               ))}
             </div>

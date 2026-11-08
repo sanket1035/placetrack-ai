@@ -414,3 +414,13 @@ h1, h2, h3, h4 { font-family: var(--font-display); font-weight: 800; letter-spac
 .applications-card, .upcoming-card { padding: 20px 22px; }
 .upcoming-card { display: grid; align-content: start; gap: 14px; }
 .upcoming-card .primary-button { margin-top: 4px; width: fit-content; }
+
+/* Readiness score explanation */
+.readiness-how { margin-top: 14px; border-top: 1px solid var(--line-dim); padding-top: 12px; font-size: 13px; }
+.readiness-how summary { cursor: pointer; font-weight: 700; color: var(--text); }
+.readiness-how p { margin: 8px 0; color: var(--text-dim); }
+.readiness-how ul { list-style: none; margin: 8px 0; padding: 0; display: grid; gap: 6px; }
+.readiness-how li { display: flex; justify-content: space-between; gap: 12px; align-items: baseline; padding: 6px 0; border-bottom: 1px dashed var(--line-dim); }
+.readiness-how li small { display: block; color: var(--muted); font-size: 11px; }
+.readiness-how .readiness-pts { font-family: "JetBrains Mono", monospace; white-space: nowrap; }
+.readiness-how .readiness-note { font-size: 12px; color: var(--muted); }

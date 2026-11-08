@@ -1,108 +1,83 @@
 /**
- * Input features required to compute a student's placement readiness score.
- *
- * @example
- * ```typescript
- * const features: ReadinessFeatures = {
- *   cgpa: 8.5,
- *   aptitudeAccuracy: 80,
- *   codingScore: 75,
- *   communicationScore: 85,
- *   projects: 3,
- *   internships: 1,
- *   mockTests: 5,
- *   backlogs: 0
- * };
- * ```
+ * Inputs for the placement readiness score. Every value comes from something the student actually
+ * did or entered in PlaceTrack. Nothing is guessed.
  */
 export interface ReadinessFeatures {
-  /** Cumulative Grade Point Average (0.0 to 10.0 scale). Contributes 22% to total score. */
+  /** Cumulative Grade Point Average (0.0 to 10.0). */
   cgpa: number;
-  /** Percentage accuracy score achieved across aptitude tests (0 to 100). Contributes 18% to total score. */
+  /** Average accuracy (0 to 100) across the student's aptitude mock tests. 0 when none were taken. */
   aptitudeAccuracy: number;
-  /** Algorithmic problem solving and coding assessment score (0 to 100). Contributes 22% to total score. */
-  codingScore: number;
-  /** Soft skills and interview communication score (0 to 100). Contributes 15% to total score. */
-  communicationScore: number;
-  /** Number of completed software / engineering projects (capped at 4). Adds 4 pts per project (max 16 pts). */
+  /** Number of aptitude mock tests the student has completed. */
+  testsTaken: number;
+  /** Number of skills on the profile. */
+  skills: number;
+  /** Number of projects the student has listed. */
   projects: number;
-  /** Number of completed industry internships (capped at 2). Adds 5 pts per internship (max 10 pts). */
+  /** Number of internships the student has listed. */
   internships: number;
-  /** Number of completed practice mock tests (capped at 10). Adds 1.2 pts per test (max 12 pts). */
-  mockTests: number;
-  /** Count of active uncleared backlogs. Deducts 7 pts per active backlog. */
+  /** Active uncleared backlogs. */
   backlogs: number;
 }
 
+export interface ReadinessPart {
+  key: string;
+  label: string;
+  points: number;
+  max: number;
+  detail: string;
+}
+
 const clamp = (value: number) => Math.max(0, Math.min(100, Math.round(value)));
+const round1 = (value: number) => Math.round(value * 10) / 10;
 
 /**
- * Calculates a student's composite Placement Readiness Score (0–100), categorizes readiness level,
- * identifies strengths & weaknesses, and generates targeted improvement recommendations.
- *
- * ### Scoring Formula Breakdown:
- * - **CGPA**: `(cgpa / 10) * 22` (Max 22 pts)
- * - **Aptitude Accuracy**: `aptitudeAccuracy * 0.18` (Max 18 pts)
- * - **Coding Score**: `codingScore * 0.22` (Max 22 pts)
- * - **Communication**: `communicationScore * 0.15` (Max 15 pts)
- * - **Projects**: `Math.min(projects, 4) * 4` (Max 16 pts)
- * - **Internships**: `Math.min(internships, 2) * 5` (Max 10 pts)
- * - **Mock Tests**: `Math.min(mockTests, 10) * 1.2` (Max 12 pts)
- * - **Backlogs Penalty**: `- (backlogs * 7)`
- *
- * ### Score Categories:
- * - `80+`: **"Placement ready"**
- * - `65 - 79`: **"Nearly ready"**
- * - `< 65`: **"Needs focused preparation"**
- *
- * @param features - Student performance metrics and experience counts
- * @returns Object containing numerical score, category label, strengths, weaknesses, and tailored recommendation string
- *
- * @example
- * ```typescript
- * const readiness = predictReadiness({
- *   cgpa: 8.2,
- *   aptitudeAccuracy: 78,
- *   codingScore: 85,
- *   communicationScore: 60,
- *   projects: 2,
- *   internships: 1,
- *   mockTests: 4,
- *   backlogs: 0
- * });
- * console.log(readiness.score);          // 78
- * console.log(readiness.category);       // "Nearly ready"
- * console.log(readiness.recommendation); // "Prioritize Communication for the next two weeks."
- * ```
+ * Placement readiness score, 0 to 100, out of these parts (maximum in brackets):
+ * - Academics: CGPA / 10 x 30 (30)
+ * - Aptitude: average accuracy of aptitude mock tests x 0.25 (25)
+ * - Practice: 1 point per mock test taken, up to 5 tests (5)
+ * - Projects: 5 points per project, up to 3 projects (15)
+ * - Internships: 7.5 points per internship, up to 2 internships (15)
+ * - Skills: 1.25 points per skill, up to 8 skills (10)
+ * - Backlogs: minus 5 per active backlog, at most minus 20
  */
 export function predictReadiness(features: ReadinessFeatures) {
-  const score = clamp(
-    (features.cgpa / 10) * 22 +
-    features.aptitudeAccuracy * 0.18 +
-    features.codingScore * 0.22 +
-    features.communicationScore * 0.15 +
-    Math.min(features.projects, 4) * 4 +
-    Math.min(features.internships, 2) * 5 +
-    Math.min(features.mockTests, 10) * 1.2 -
-    features.backlogs * 7
-  );
+  const f = {
+    cgpa: Math.max(0, Math.min(10, Number(features.cgpa) || 0)),
+    aptitudeAccuracy: Math.max(0, Math.min(100, Number(features.aptitudeAccuracy) || 0)),
+    testsTaken: Math.max(0, Number(features.testsTaken) || 0),
+    skills: Math.max(0, Number(features.skills) || 0),
+    projects: Math.max(0, Number(features.projects) || 0),
+    internships: Math.max(0, Number(features.internships) || 0),
+    backlogs: Math.max(0, Number(features.backlogs) || 0)
+  };
 
-  const metrics = [
-    ["CGPA", features.cgpa * 10],
-    ["Aptitude", features.aptitudeAccuracy],
-    ["Coding", features.codingScore],
-    ["Communication", features.communicationScore]
-  ] as const;
-  const strengths = metrics.filter(([, value]) => value >= 75).map(([name]) => name);
-  const weaknesses = metrics.filter(([, value]) => value < 65).map(([name]) => name);
+  const parts: ReadinessPart[] = [
+    { key: "academics", label: "Academics", points: (f.cgpa / 10) * 30, max: 30, detail: `CGPA ${f.cgpa}` },
+    {
+      key: "aptitude", label: "Aptitude tests", points: f.aptitudeAccuracy * 0.25, max: 25,
+      detail: f.testsTaken ? `${Math.round(f.aptitudeAccuracy)}% average accuracy` : "No test taken yet"
+    },
+    { key: "practice", label: "Practice", points: Math.min(f.testsTaken, 5), max: 5, detail: `${f.testsTaken} of 5 mock tests` },
+    { key: "projects", label: "Projects", points: Math.min(f.projects, 3) * 5, max: 15, detail: `${f.projects} of 3 projects` },
+    { key: "internships", label: "Internships", points: Math.min(f.internships, 2) * 7.5, max: 15, detail: `${f.internships} of 2 internships` },
+    { key: "skills", label: "Skills", points: Math.min(f.skills, 8) * 1.25, max: 10, detail: `${f.skills} of 8 skills` }
+  ].map((part) => ({ ...part, points: round1(part.points) }));
+
+  const penalty = Math.min(f.backlogs * 5, 20);
+  const score = clamp(parts.reduce((sum, part) => sum + part.points, 0) - penalty);
+
+  const weak = parts.filter((part) => part.points < part.max * 0.5).sort((a, b) => (b.max - b.points) - (a.max - a.points));
+  const strong = parts.filter((part) => part.points >= part.max * 0.75).map((part) => part.label);
 
   return {
     score,
-    category: score >= 80 ? "Placement ready" : score >= 65 ? "Nearly ready" : "Needs focused preparation",
-    strengths,
-    weaknesses,
-    recommendation: weaknesses.length
-      ? `Prioritize ${weaknesses.slice(0, 2).join(" and ")} for the next two weeks.`
-      : "Keep momentum with timed mocks and company-specific interview practice."
+    category: score >= 75 ? "Placement ready" : score >= 55 ? "Nearly ready" : "Needs focused preparation",
+    breakdown: parts,
+    backlogPenalty: penalty,
+    strengths: strong,
+    weaknesses: weak.map((part) => part.label),
+    recommendation: weak.length
+      ? `Biggest gains: ${weak.slice(0, 2).map((part) => part.label.toLowerCase()).join(" and ")}.`
+      : "Keep momentum with timed mock tests and company-specific interview practice."
   };
 }

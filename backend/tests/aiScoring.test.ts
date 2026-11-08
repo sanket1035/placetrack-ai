@@ -242,9 +242,9 @@ describe("student onboarding and profile lock", () => {
     const inflate = await request(app).patch("/api/auth/me/student").set(auth).send({ cgpa: 9.9 });
     expect(inflate.status).toBe(403);
 
-    const allowed = await request(app).patch("/api/auth/profile").set(auth).send({ phone: "9876543210", skills: ["react", "sql"] });
+    const allowed = await request(app).patch("/api/auth/profile").set(auth).send({ skills: ["react", "sql"] });
     expect(allowed.status).toBe(200);
-    expect(allowed.body.phone).toBe("9876543210");
+    expect(allowed.body.skills).toEqual(["react", "sql"]);
     expect(allowed.body.cgpa).toBe(8.1);
   });
 });
