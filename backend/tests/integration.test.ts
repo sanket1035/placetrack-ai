@@ -505,19 +505,26 @@ describe("PlaceTrack AI - Backend Integration Tests", () => {
         .set("Authorization", `Bearer ${studentToken}`)
         .send({
           skills: ["React", "Node.js", "TypeScript", "Docker"],
-          phone: "9876543210",
-          linkedinUrl: "https://linkedin.com/in/teststudent",
-          projectsCount: 3,
-          internshipsCount: 1
+          linkedinUrl: "https://www.linkedin.com/in/teststudent",
+          projects: ["Campus placement tracker", "Smart attendance app", "Portfolio site"],
+          internships: ["Summer intern at Acme"]
         });
 
       expect(response.status).toBe(200);
-      expect(response.body.phone).toBe("9876543210");
-      expect(response.body.linkedinUrl).toBe("https://linkedin.com/in/teststudent");
+      expect(response.body.linkedinUrl).toBe("https://www.linkedin.com/in/teststudent");
       expect(response.body.projectsCount).toBe(3);
+      expect(response.body.projectNames).toEqual(["Campus placement tracker", "Smart attendance app", "Portfolio site"]);
       expect(response.body.internshipsCount).toBe(1);
+      expect(response.body.internshipNames).toEqual(["Summer intern at Acme"]);
       expect(response.body.skills).toEqual(["React", "Node.js", "TypeScript", "Docker"]);
       expect(response.body.readinessScore).toBeGreaterThan(0);
+    });
+
+    it("only accepts a real LinkedIn link", async () => {
+      for (const bad of ["https://example.com/in/someone", "http://linkedin.com/in/x", "linkedin.com/in/x"]) {
+        const res = await request(app).patch("/api/auth/profile").set("Authorization", `Bearer ${studentToken}`).send({ linkedinUrl: bad });
+        expect(res.status).toBe(400);
+      }
     });
 
     it("validates fields (e.g. invalid url fails with 400)", async () => {

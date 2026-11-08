@@ -10,6 +10,8 @@ import {
   Sparkles, Gauge, Users, Target, Download, Plus, CheckCircle2, ArrowUpRight,
   Sun, Moon, Upload, Send, CalendarDays, Trophy, Share2, Trash2, ChevronDown, ClipboardList
 } from "lucide-react";
+import NameListField from "./NameListField";
+import { LINKEDIN_HINT, checkNames, isLinkedinUrl, parseNames } from "@/lib/profile";
 import { api, ApiError, ROLE_LABEL, type LoginResponse, type Role, type SessionUser } from "@/lib/api";
 import { NotificationBell } from "./NotificationBell";
 import { useNotifications } from "../hooks/useNotifications";
@@ -704,10 +706,9 @@ function ProfileModal({ user, token, onClose, onSaved, flash }: {
     cgpa: student && student.cgpa > 0 ? String(student.cgpa) : "",
     graduationYear: String(student?.graduationYear ?? new Date().getFullYear() + 1),
     backlogs: String(student?.backlogs ?? 0),
-    phone: student?.phone ?? "",
     linkedinUrl: student?.linkedinUrl ?? "",
-    projectsCount: String(student?.projectsCount ?? 0),
-    internshipsCount: String(student?.internshipsCount ?? 0),
+    projectsText: ((student as any)?.projectNames ?? []).join("\n"),
+    internshipsText: ((student as any)?.internshipNames ?? []).join("\n"),
     emailEnabled: student?.emailEnabled ?? true
   });
   const [selectedSkills, setSelectedSkills] = useState<string[]>(student?.skills ?? []);
@@ -729,10 +730,9 @@ function ProfileModal({ user, token, onClose, onSaved, flash }: {
           graduationYear: Number(form.graduationYear),
           skills: selectedSkills,
           backlogs: Number(form.backlogs),
-          phone: form.phone || null,
-          linkedinUrl: form.linkedinUrl || null,
-          projectsCount: Number(form.projectsCount),
-          internshipsCount: Number(form.internshipsCount),
+          linkedinUrl: form.linkedinUrl.trim() || null,
+          projects: parseNames(form.projectsText),
+          internships: parseNames(form.internshipsText),
           emailEnabled: form.emailEnabled
         })
       });
@@ -765,10 +765,9 @@ function ProfileModal({ user, token, onClose, onSaved, flash }: {
             <label>CGPA<input value={form.cgpa} onChange={(event) => setForm((old) => ({ ...old, cgpa: event.target.value }))} /></label>
             <label>Graduation Year<input value={form.graduationYear} onChange={(event) => setForm((old) => ({ ...old, graduationYear: event.target.value }))} /></label>
             <label>Backlogs<input value={form.backlogs} onChange={(event) => setForm((old) => ({ ...old, backlogs: event.target.value }))} /></label>
-            <label>Phone Number<input value={form.phone} onChange={(event) => setForm((old) => ({ ...old, phone: event.target.value }))} /></label>
-            <label>LinkedIn URL<input value={form.linkedinUrl} onChange={(event) => setForm((old) => ({ ...old, linkedinUrl: event.target.value }))} /></label>
-            <label>Projects Count<input value={form.projectsCount} type="number" onChange={(event) => setForm((old) => ({ ...old, projectsCount: event.target.value }))} /></label>
-            <label>Internships Count<input value={form.internshipsCount} type="number" onChange={(event) => setForm((old) => ({ ...old, internshipsCount: event.target.value }))} /></label>
+            <label style={{ gridColumn: "1 / -1" }}>LinkedIn URL<input type="url" inputMode="url" placeholder="https://www.linkedin.com/in/your-name" value={form.linkedinUrl} onChange={(event) => setForm((old) => ({ ...old, linkedinUrl: event.target.value }))} /></label>
+            <NameListField label="Projects" noun="project" value={form.projectsText} placeholder={"Campus placement tracker\nSmart attendance app"} onChange={(next) => setForm((old) => ({ ...old, projectsText: next }))} />
+            <NameListField label="Internships" noun="internship" value={form.internshipsText} placeholder={"Summer intern at Acme Pvt. Ltd."} onChange={(next) => setForm((old) => ({ ...old, internshipsText: next }))} />
             <label style={{ flexDirection: "row", alignItems: "center", gap: "10px", gridColumn: "1 / -1", cursor: "pointer", textTransform: "none", letterSpacing: "normal", fontSize: "13px", color: "var(--text)", fontWeight: 500 }}>
               <input
                 type="checkbox"
@@ -828,10 +827,9 @@ function ProfileEditor({ user, token, onSaved, flash, dashboard }: {
     cgpa: student && student.cgpa > 0 ? String(student.cgpa) : "",
     graduationYear: String(student?.graduationYear ?? new Date().getFullYear() + 1),
     backlogs: String(student?.backlogs ?? 0),
-    phone: student?.phone ?? "",
     linkedinUrl: student?.linkedinUrl ?? "",
-    projectsCount: String(student?.projectsCount ?? 0),
-    internshipsCount: String(student?.internshipsCount ?? 0),
+    projectsText: ((student as any)?.projectNames ?? []).join("\n"),
+    internshipsText: ((student as any)?.internshipNames ?? []).join("\n"),
     emailEnabled: student?.emailEnabled ?? true
   });
   const [selectedSkills, setSelectedSkills] = useState<string[]>(student?.skills ?? []);
@@ -849,17 +847,24 @@ function ProfileEditor({ user, token, onSaved, flash, dashboard }: {
     }
     setSaving(true);
     try {
-      if (form.linkedinUrl && !/^https?:\/\//i.test(form.linkedinUrl)) {
-        flash("LinkedIn URL must start with http:// or https://");
+      if (form.linkedinUrl.trim() && !isLinkedinUrl(form.linkedinUrl)) {
+        flash(LINKEDIN_HINT);
+        setSaving(false);
+        return;
+      }
+      const projects = parseNames(form.projectsText);
+      const internships = parseNames(form.internshipsText);
+      const listError = checkNames("projects", projects) ?? checkNames("internships", internships);
+      if (listError) {
+        flash(listError);
         setSaving(false);
         return;
       }
       const common = {
         skills: selectedSkills,
-        phone: form.phone || null,
-        linkedinUrl: form.linkedinUrl || null,
-        projectsCount: Number(form.projectsCount) || 0,
-        internshipsCount: Number(form.internshipsCount) || 0
+        linkedinUrl: form.linkedinUrl.trim() || null,
+        projects,
+        internships
       };
       if (user.role === "STUDENT" && locked) {
         await api("/api/auth/profile", token, { method: "PATCH", body: JSON.stringify(common) });
@@ -932,10 +937,9 @@ function ProfileEditor({ user, token, onSaved, flash, dashboard }: {
         <label>CGPA<input value={form.cgpa} disabled={locked} style={lockedStyle} onChange={(event) => setForm((old) => ({ ...old, cgpa: event.target.value }))} /></label>
         <label>Graduation Year<input value={form.graduationYear} disabled={locked} style={lockedStyle} onChange={(event) => setForm((old) => ({ ...old, graduationYear: event.target.value }))} /></label>
         <label>Backlogs<input value={form.backlogs} disabled={locked} style={lockedStyle} onChange={(event) => setForm((old) => ({ ...old, backlogs: event.target.value }))} /></label>
-        <label>Phone Number<input value={form.phone} onChange={(event) => setForm((old) => ({ ...old, phone: event.target.value }))} /></label>
-        <label>LinkedIn URL<input value={form.linkedinUrl} onChange={(event) => setForm((old) => ({ ...old, linkedinUrl: event.target.value }))} /></label>
-        <label>Projects Count<input value={form.projectsCount} type="number" onChange={(event) => setForm((old) => ({ ...old, projectsCount: event.target.value }))} /></label>
-        <label>Internships Count<input value={form.internshipsCount} type="number" onChange={(event) => setForm((old) => ({ ...old, internshipsCount: event.target.value }))} /></label>
+        <label style={{ gridColumn: "1 / -1" }}>LinkedIn URL<input type="url" inputMode="url" placeholder="https://www.linkedin.com/in/your-name" value={form.linkedinUrl} onChange={(event) => setForm((old) => ({ ...old, linkedinUrl: event.target.value }))} /></label>
+        <NameListField label="Projects" noun="project" value={form.projectsText} placeholder={"Campus placement tracker\nSmart attendance app"} onChange={(next) => setForm((old) => ({ ...old, projectsText: next }))} />
+        <NameListField label="Internships" noun="internship" value={form.internshipsText} placeholder={"Summer intern at Acme Pvt. Ltd."} onChange={(next) => setForm((old) => ({ ...old, internshipsText: next }))} />
         <label style={{ flexDirection: "row", alignItems: "center", gap: "10px", gridColumn: "1 / -1", cursor: "pointer", textTransform: "none", letterSpacing: "normal", fontSize: "13px", color: "var(--text)", fontWeight: 500 }}>
           <input
             type="checkbox"
@@ -978,8 +982,8 @@ function ProfileEditor({ user, token, onSaved, flash, dashboard }: {
             graduationYear: Number(form.graduationYear),
             skills: selectedSkills,
             backlogs: Number(form.backlogs),
-            projectsCount: Number(form.projectsCount),
-            internshipsCount: Number(form.internshipsCount),
+            projectsCount: parseNames(form.projectsText).length,
+            internshipsCount: parseNames(form.internshipsText).length,
             mockTestCount: student.mockTestCount
           }}
           readinessScore={Math.min(100, Math.max(0, readinessScore))}
