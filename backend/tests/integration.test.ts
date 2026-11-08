@@ -693,4 +693,17 @@ describe("PlaceTrack AI - Backend Integration Tests", () => {
       expect(unset.status).toBe(503);
     });
   });
+
+  describe("recruiters list", () => {
+    it("lets only the admin manage it and shows names publicly", async () => {
+      const blocked = await request(app).post("/api/recruiters/bulk").set("Authorization", `Bearer ${studentToken}`).send({ names: ["Infosys"] });
+      expect(blocked.status).toBe(403);
+      const auth = { Authorization: `Bearer ${adminToken}` };
+      const added = await request(app).post("/api/recruiters/bulk").set(auth).send({ names: ["Infosys", "  tcs ", "infosys", "", "X"] });
+      expect(added.status).toBe(201);
+      expect(added.body).toEqual({ added: 2, skipped: 1 });
+      const publicList = await request(app).get("/api/public/recruiters");
+      expect(publicList.body).toEqual(["Infosys", "tcs"]);
+    });
+  });
 });

@@ -18,19 +18,23 @@ publicRouter.get("/stats", async (_request, response) => {
     prisma.application.findMany({ where: { status: "SELECTED" }, select: { drive: { select: { package: true, company: { select: { name: true } } } } } })
   ]);
   const packages = selected.map((row) => row.drive.package);
-  const recruiters = new Map<string, number>();
-  for (const drive of drives) recruiters.set(drive.company.name, (recruiters.get(drive.company.name) ?? 0) + 1);
+  const companies = new Set(drives.map((drive) => drive.company.name));
   response.json({
     enabled: true,
     students,
     placed: placedRows.length,
     placementRate: students ? Math.round((placedRows.length / students) * 100) : 0,
-    companies: recruiters.size,
+    companies: companies.size,
     drives: drives.length,
     highestPackage: packages.length ? Math.max(...packages) : 0,
-    averagePackage: packages.length ? Number((packages.reduce((a, b) => a + b, 0) / packages.length).toFixed(2)) : 0,
-    recruiters: [...recruiters.entries()].sort((a, b) => b[1] - a[1]).slice(0, 12).map(([name, driveCount]) => ({ name, drives: driveCount }))
+    averagePackage: packages.length ? Number((packages.reduce((a, b) => a + b, 0) / packages.length).toFixed(2)) : 0
   });
+});
+
+// Names only. Maintained by the admin (see recruiters.routes.ts).
+publicRouter.get("/recruiters", async (_request, response) => {
+  const rows = await prisma.recruiter.findMany({ orderBy: { name: "asc" }, select: { name: true } });
+  response.json(rows.map((row) => row.name));
 });
 
 const inquiryLimiter = rateLimit({

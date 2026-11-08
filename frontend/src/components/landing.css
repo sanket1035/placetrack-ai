@@ -47,10 +47,8 @@
 .lp-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 16px; }
 .lp-stat { border: 1.5px solid var(--line); border-radius: 18px; padding: 22px; background: #fff; display: grid; gap: 4px; }
 .lp-stat strong { font-family: "Bricolage Grotesque", sans-serif; font-size: 40px; } .lp-stat span { color: var(--muted); font-size: 14px; }
-.lp-recruiters { margin-top: 32px; } .lp-recruiters h3 { font-size: 20px; margin-bottom: 12px; }
-.lp-recruiters ul { list-style: none; padding: 0; margin: 0; display: flex; flex-wrap: wrap; gap: 10px; }
-.lp-recruiters li { border: 1.5px solid var(--line); border-radius: 999px; padding: 8px 16px; font-weight: 700; background: #fff; display: flex; gap: 8px; align-items: baseline; }
-.lp-recruiters small { color: var(--muted); font-weight: 500; }
+.lp-recruiters-list { list-style: none; padding: 0; margin: 0; display: flex; flex-wrap: wrap; gap: 10px; }
+.lp-recruiters-list li { border: 1.5px solid var(--line); border-radius: 999px; padding: 8px 16px; font-weight: 700; background: #fff; }
 
 .lp-faq { display: grid; gap: 10px; max-width: 760px; }
 .lp-faq details { background: #fff; border: 1.5px solid var(--line); border-radius: 14px; padding: 16px 18px; }

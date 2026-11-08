@@ -11,7 +11,6 @@ type PublicStats = {
   enabled: boolean;
   students?: number; placed?: number; placementRate?: number; companies?: number; drives?: number;
   highestPackage?: number; averagePackage?: number;
-  recruiters?: Array<{ name: string; drives: number }>;
 };
 
 const FEATURES = [
@@ -38,12 +37,14 @@ const FAQ = [
 
 export function Landing() {
   const [stats, setStats] = useState<PublicStats | null>(null);
+  const [recruiters, setRecruiters] = useState<string[]>([]);
   const [form, setForm] = useState({ name: "", email: "", phone: "", message: "", website: "" });
   const [sending, setSending] = useState(false);
   const [note, setNote] = useState<{ ok: boolean; text: string } | null>(null);
 
   useEffect(() => {
     fetch(`${API_BASE}/api/public/stats`).then((r) => (r.ok ? r.json() : null)).then(setStats).catch(() => setStats(null));
+    fetch(`${API_BASE}/api/public/recruiters`).then((r) => (r.ok ? r.json() : [])).then((list) => setRecruiters(Array.isArray(list) ? list : [])).catch(() => setRecruiters([]));
   }, []);
 
   const showNumbers = Boolean(stats?.enabled && (stats.students ?? 0) > 0);
@@ -77,6 +78,7 @@ export function Landing() {
           <a href="#features">Features</a>
           <a href="#how">How it works</a>
           {showNumbers && <a href="#numbers">Numbers</a>}
+          {recruiters.length > 0 && <a href="#recruiters">Recruiters</a>}
           <a href="#faq">FAQ</a>
           <a href="#inquiry">Inquiry</a>
         </nav>
@@ -151,12 +153,14 @@ export function Landing() {
               <div key={label} className="lp-stat"><strong>{value}</strong><span>{label}</span></div>
             ))}
           </div>
-          {stats.recruiters && stats.recruiters.length > 0 && (
-            <div className="lp-recruiters">
-              <h3>Companies on campus</h3>
-              <ul>{stats.recruiters.map((c) => <li key={c.name}>{c.name}<small>{c.drives} drive{c.drives > 1 ? "s" : ""}</small></li>)}</ul>
-            </div>
-          )}
+        </section>
+      )}
+
+      {recruiters.length > 0 && (
+        <section id="recruiters" className="lp-section">
+          <span className="lp-eyebrow">Our recruiters</span>
+          <h2>Companies that have hired from us.</h2>
+          <ul className="lp-recruiters-list">{recruiters.map((name) => <li key={name}>{name}</li>)}</ul>
         </section>
       )}
 

@@ -190,6 +190,13 @@ model TestResult {
   @@index([completedAt])
 }
 
+/// Past campus recruiters shown on the public landing page. Maintained by the admin, independent of drives in the app.
+model Recruiter {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  createdAt DateTime @default(now())
+}
+
 model Notification {
   id         String   @id @default(cuid())
   userId     String
