@@ -118,3 +118,33 @@
 .lp-hero .lp-btn-line { color: #fff; border-color: rgba(255,255,255,.8); }
 .lp-roles { margin-top: 32px; }
 @media (max-width: 860px) { .lp-hero { padding: 110px 16px 48px; } }
+
+/* ---- Full-width, responsive pass (last so it wins) ---- */
+.lp { --wrap: min(1320px, calc(100% - 48px)); --pad-x: max(24px, calc((100% - 1320px) / 2)); }
+.lp-nav { padding: 18px var(--pad-x); }
+.lp-hero { padding-left: var(--pad-x); padding-right: var(--pad-x); }
+.lp-roles { width: var(--wrap); margin: -56px auto 0; position: relative; z-index: 2; }
+.lp-section { width: 100%; padding: clamp(56px, 9vw, 112px) var(--pad-x); }
+.lp-section.lp-alt { background: #F2F0E3; }
+#figures { background: var(--cream); }
+.lp-section h2 { max-width: 900px; }
+.lp-banner { width: 100%; margin: 0; border-radius: 0; padding: clamp(64px, 10vw, 120px) var(--pad-x); }
+.lp-foot { margin-top: 0; padding-left: var(--pad-x); padding-right: var(--pad-x); }
+.lp-faq { max-width: 900px; }
+.lp-burger { display: none; background: none; border: 0; padding: 8px; cursor: pointer; flex-direction: column; gap: 5px; }
+.lp-burger span { display: block; width: 24px; height: 2.5px; background: #fff; border-radius: 2px; }
+@media (max-width: 1100px) { .lp-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 860px) {
+  .lp { --wrap: calc(100% - 32px); --pad-x: 16px; }
+  .lp-nav { padding: 12px 16px; }
+  .lp-burger { display: flex; margin-left: auto; margin-right: 8px; }
+  .lp-nav nav { display: none; position: absolute; top: 100%; left: 16px; right: 16px; flex-direction: column; gap: 0; background: var(--forest); border-radius: 16px; padding: 8px; box-shadow: 0 12px 32px rgba(0,0,0,.3); }
+  .lp-nav nav.open { display: flex; }
+  .lp-nav nav a { padding: 14px 16px; font-size: 16px; text-shadow: none; }
+  .lp-roles { margin-top: -32px; }
+  .lp-grid, .lp-steps, .lp-roles { grid-template-columns: 1fr; }
+  .lp-hero { min-height: 100svh; padding: 110px 16px 64px; }
+  .lp-foot { flex-direction: column; align-items: flex-start; }
+  .lp-foot nav { flex-wrap: wrap; }
+}
+@media (max-width: 420px) { .lp-btn { padding: 12px 18px; } .lp-hero .lp-cta { width: 100%; } .lp-hero .lp-cta .lp-btn { flex: 1 1 100%; } }
