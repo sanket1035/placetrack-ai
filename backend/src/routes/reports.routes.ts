@@ -9,6 +9,9 @@ import { toCsv, toJson, exportFilename } from "../utils/exportUtils.js";
 export const reportsRouter = Router();
 reportsRouter.use(authenticate, authorize(UserRole.TPC, UserRole.ADMIN), attachScope);
 
+// Coordinators may only export the company/drives report; student and application data stays with the admin.
+const adminOnly = authorize(UserRole.ADMIN);
+
 const dept = (request: { scope?: { department: string | null } }) => request.scope!.department;
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -129,7 +132,7 @@ function mapDriveJson(item: any) {
 
 // ─── Applications ─────────────────────────────────────────────────────────────
 
-reportsRouter.get("/applications.csv", async (request, response) => {
+reportsRouter.get("/applications.csv", adminOnly, async (request, response) => {
   const applications = await prisma.application.findMany({
     where: applicationWhere(dept(request)),
     include: {
@@ -154,7 +157,7 @@ reportsRouter.get("/applications.csv", async (request, response) => {
   response.send(csv);
 });
 
-reportsRouter.get("/applications.json", async (request, response) => {
+reportsRouter.get("/applications.json", adminOnly, async (request, response) => {
   const applications = await prisma.application.findMany({
     where: applicationWhere(dept(request)),
     include: {
@@ -180,7 +183,7 @@ reportsRouter.get("/applications.json", async (request, response) => {
 
 // ─── Students ─────────────────────────────────────────────────────────────────
 
-reportsRouter.get("/students.csv", async (request, response) => {
+reportsRouter.get("/students.csv", adminOnly, async (request, response) => {
   const students = await prisma.student.findMany({
     where: studentWhere(dept(request)),
     include: {
@@ -201,7 +204,7 @@ reportsRouter.get("/students.csv", async (request, response) => {
   response.send(csv);
 });
 
-reportsRouter.get("/students.json", async (request, response) => {
+reportsRouter.get("/students.json", adminOnly, async (request, response) => {
   const students = await prisma.student.findMany({
     where: studentWhere(dept(request)),
     include: {
@@ -268,7 +271,7 @@ reportsRouter.get("/drives.json", async (request, response) => {
 
 // ─── Placement Summary (JSON only) ────────────────────────────────────────────
 
-reportsRouter.get("/summary.json", async (request, response) => {
+reportsRouter.get("/summary.json", adminOnly, async (request, response) => {
   const [
     totalStudents,
     totalDrives,
@@ -398,5 +401,62 @@ reportsRouter.get("/analytics", async (request, response) => {
     historicalTrends,
     packageDistribution,
     departmentPlacements,
+  });
+});
+
+
+// ─── Department overview (coordinator dashboard) ──────────────────────────────
+
+reportsRouter.get("/department-overview", async (request, response) => {
+  const department = dept(request);
+  const students = await prisma.student.findMany({
+    where: studentWhere(department),
+    select: {
+      id: true, name: true, branch: true, cgpa: true, backlogs: true, readinessScore: true,
+      skills: true, projectNames: true, internshipNames: true,
+      applications: { select: { status: true, drive: { select: { package: true } } } }
+    }
+  });
+  const drives = await prisma.placementDrive.findMany({
+    where: driveWhere(department),
+    select: { status: true, deadline: true, company: { select: { name: true } }, role: true, package: true, _count: { select: { applications: true } } }
+  });
+
+  const placed = students.filter((student) => student.applications.some((application) => application.status === "SELECTED"));
+  const placedPackages = placed.flatMap((student) => student.applications.filter((a) => a.status === "SELECTED").map((a) => a.drive.package));
+  const funnel: Record<string, number> = { APPLIED: 0, SHORTLISTED: 0, APTITUDE_CLEARED: 0, TECHNICAL_ROUND: 0, HR_ROUND: 0, SELECTED: 0, REJECTED: 0 };
+  for (const student of students) for (const application of student.applications) funnel[application.status] = (funnel[application.status] ?? 0) + 1;
+
+  const total = students.length;
+  const avg = (values: number[]) => (values.length ? values.reduce((a, b) => a + b, 0) / values.length : 0);
+  const now = Date.now();
+  const atRisk = students
+    .filter((student) => student.readinessScore < 40 || student.backlogs > 0)
+    .sort((a, b) => b.backlogs - a.backlogs || a.readinessScore - b.readinessScore)
+    .slice(0, 25)
+    .map((student) => ({
+      id: student.id, name: student.name, branch: student.branch, cgpa: student.cgpa, backlogs: student.backlogs,
+      readiness: Math.round(student.readinessScore),
+      reasons: [student.backlogs > 0 ? `${student.backlogs} backlog${student.backlogs > 1 ? "s" : ""}` : "", student.readinessScore < 40 ? "Low readiness" : ""].filter(Boolean)
+    }));
+  const incompleteProfiles = students.filter((student) => student.skills.length < 3 || student.projectNames.length === 0).length;
+
+  response.json({
+    department: department ?? "All departments",
+    totalStudents: total,
+    placedStudents: placed.length,
+    placementRate: total ? Math.round((placed.length / total) * 100) : 0,
+    averageCgpa: Number(avg(students.map((s) => s.cgpa)).toFixed(2)),
+    averageReadiness: Math.round(avg(students.map((s) => s.readinessScore))),
+    averagePackage: Number(avg(placedPackages).toFixed(2)),
+    highestPackage: placedPackages.length ? Math.max(...placedPackages) : 0,
+    lowReadiness: students.filter((s) => s.readinessScore < 40).length,
+    withBacklogs: students.filter((s) => s.backlogs > 0).length,
+    incompleteProfiles,
+    activeDrives: drives.filter((drive) => drive.status === "OPEN" && drive.deadline.getTime() > now).length,
+    funnel,
+    topDrives: [...drives].sort((a, b) => b._count.applications - a._count.applications).slice(0, 5)
+      .map((drive) => ({ company: drive.company.name, role: drive.role, package: drive.package, applications: drive._count.applications })),
+    atRisk
   });
 });

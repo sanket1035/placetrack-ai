@@ -3,6 +3,8 @@ export type { Role, SessionUser };
 
 export type View =
   | "Overview"
+  | "Department Overview"
+  | "Mock Tests"
   | "Applications"
   | "Opportunities"
   | "Resume AI"

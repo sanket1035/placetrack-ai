@@ -668,4 +668,15 @@ describe("PlaceTrack AI - Backend Integration Tests", () => {
       expect(template.status).toBe(200);
     });
   });
+
+  describe("coordinator reports", () => {
+    it("blocks students from reports and lets admin read the department overview", async () => {
+      const blocked = await request(app).get("/api/reports/department-overview").set("Authorization", `Bearer ${studentToken}`);
+      expect(blocked.status).toBe(403);
+      const overview = await request(app).get("/api/reports/department-overview").set("Authorization", `Bearer ${adminToken}`);
+      expect(overview.status).toBe(200);
+      expect(overview.body).toHaveProperty("placementRate");
+      expect(Array.isArray(overview.body.atRisk)).toBe(true);
+    });
+  });
 });

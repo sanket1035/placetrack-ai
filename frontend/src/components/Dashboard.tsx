@@ -17,6 +17,7 @@ import { NotificationBell } from "./NotificationBell";
 import { useNotifications } from "../hooks/useNotifications";
 import PracticeView from "./PracticeView";
 import TestUploadCard from "./TestUploadCard";
+import DepartmentOverview from "./DepartmentOverview";
 import ExportCenter from "./ExportCenter";
 import { useProfileExport } from "../hooks/useProfileExport";
 import ProfileCardExport from "./ProfileCardExport";
@@ -45,6 +46,8 @@ import { DEPARTMENTS as AVAILABLE_DEPARTMENTS } from "@/lib/departments";
 
 const navIcons: Record<View, ElementType> = {
   Overview: LayoutDashboard,
+  "Department Overview": LayoutDashboard,
+  "Mock Tests": BookOpenCheck,
   Applications: BriefcaseBusiness,
   Opportunities: Building2,
   "Resume AI": FileScan,
@@ -61,15 +64,17 @@ const navIcons: Record<View, ElementType> = {
 };
 
 const NAV_GROUPS: { label: string; items: View[] }[] = [
-  { label: "Overview", items: ["Overview"] },
+  { label: "Overview", items: ["Overview", "Department Overview"] },
   { label: "Drives", items: ["Applications", "Off-Campus", "Opportunities", "Drive Creator"] },
-  { label: "Prepare", items: ["Resume AI", "Aptitude", "Interview", "Practice"] },
+  { label: "Prepare", items: ["Resume AI", "Aptitude", "Interview", "Practice", "Mock Tests"] },
   { label: "Insights", items: ["Analytics", "Users", "Students", "Export Center"] },
   { label: "Profile", items: ["Profile"] },
 ];
 
 const NAV_META: Record<View, { blurb: string; tone: string }> = {
   Overview: { blurb: "Your placement status at a glance.", tone: "mint" },
+  "Department Overview": { blurb: "Placement progress of your department.", tone: "mint" },
+  "Mock Tests": { blurb: "Upload and manage aptitude mock tests.", tone: "sun" },
   Applications: { blurb: "Track every application and its stage.", tone: "mint" },
   Opportunities: { blurb: "Open drives you are eligible for.", tone: "sun" },
   "Drive Creator": { blurb: "Create and publish a placement drive.", tone: "lilac" },
@@ -146,12 +151,15 @@ export function Dashboard() {
   const { notifications, markAsRead, markAllAsRead } = useNotifications(token, initialNotifications);
 
   const role = user?.role ?? "STUDENT";
+  useEffect(() => {
+    if (role === "TPC" && !(["Department Overview", "Students", "Applications", "Drive Creator", "Analytics", "Mock Tests", "Export Center"] as View[]).includes(view)) setView("Department Overview");
+  }, [role, view]);
   const nav = useMemo(() => {
+    if (role === "TPC") return ["Department Overview", "Students", "Applications", "Drive Creator", "Analytics", "Mock Tests", "Export Center"] as View[];
     const base: View[] = ["Overview", "Applications", "Opportunities", "Resume AI", "Aptitude", "Profile"];
     if (role !== "STUDENT") base.push("Interview", "Drive Creator", "Analytics");
     if (role === "STUDENT") base.push("Interview", "Practice", "Off-Campus");
     if (role === "ADMIN") base.push("Users");
-    if (role === "TPC") base.push("Students");
     base.push("Export Center");
     return base;
   }, [role]);
@@ -469,7 +477,8 @@ export function Dashboard() {
             {view === "Applications" && <Applications role={role} token={token} applications={filteredApplications} onRefresh={() => refreshAll()} flash={flash} loading={loading} />}
             {view === "Opportunities" && <Opportunities role={role} token={token} drives={filteredDrives} onRefresh={() => refreshAll()} onNavigate={setView} flash={flash} onViewDrive={setSelectedDrive} loading={loading} filterConditions={filterConditions} setFilterConditions={setFilterConditions} allDrives={drivesWithEligibility} />}
             {view === "Resume AI" && <ResumeAI token={token} flash={flash} />}
-            {view === "Aptitude" && <Aptitude token={token} role={role} tests={filteredTests} flash={flash} onChanged={() => refreshAll()} />}
+            {view === "Department Overview" && <DepartmentOverview token={token} onNavigate={setView} />}
+            {(view === "Aptitude" || view === "Mock Tests") && <Aptitude token={token} role={role} tests={filteredTests} flash={flash} onChanged={() => refreshAll()} />}
             {view === "Interview" && <InterviewCoach token={token} flash={flash} />}
             {view === "Profile" && <ProfilePage user={user} token={token} onSaved={async () => { await refreshMe(); await refreshAll(); flash("Profile updated"); }} flash={flash} dashboard={dashboard} />}
             {view === "Drive Creator" && <DriveCreator token={token} flash={flash} onCreated={() => refreshAll()} drives={drives} />}
