@@ -64,6 +64,7 @@ export function Landing() {
 
   return (
     <div className="lp">
+      <div className="lp-top">
       <header className="lp-nav">
         <Link href="/" className="lp-brand">
           {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -91,6 +92,7 @@ export function Landing() {
           <a href="#features" className="lp-btn lp-btn-line">See what is inside</a>
         </div>
       </section>
+      </div>
 
       <section className="lp-roles">
         {[
