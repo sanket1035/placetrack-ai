@@ -679,4 +679,18 @@ describe("PlaceTrack AI - Backend Integration Tests", () => {
       expect(Array.isArray(overview.body.atRisk)).toBe(true);
     });
   });
+
+  describe("public landing endpoints", () => {
+    it("keeps stats off until enabled and validates the inquiry form", async () => {
+      const stats = await request(app).get("/api/public/stats");
+      expect(stats.status).toBe(200);
+      expect(stats.body).toEqual({ enabled: false });
+      const bad = await request(app).post("/api/public/inquiry").send({ name: "A", email: "nope", message: "hi" });
+      expect(bad.status).toBe(400);
+      const bot = await request(app).post("/api/public/inquiry").send({ name: "Bot Person", email: "bot@example.com", message: "buy cheap things now", website: "http://spam" });
+      expect(bot.status).toBe(200);
+      const unset = await request(app).post("/api/public/inquiry").send({ name: "Real Person", email: "real@example.com", message: "When is the next drive?" });
+      expect(unset.status).toBe(503);
+    });
+  });
 });
