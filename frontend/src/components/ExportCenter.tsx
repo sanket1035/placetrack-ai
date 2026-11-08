@@ -4,7 +4,6 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   FileText,
-  FileJson,
   FileDown,
   Download,
   CheckCircle2,
@@ -21,7 +20,7 @@ import { downloadExport, fetchExportData, type ExportReportType } from "@/lib/ap
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 
-type ExportFormat = "csv" | "json" | "pdf";
+type ExportFormat = "csv" | "pdf";
 
 interface FormatCard {
   id: ExportFormat;
@@ -52,15 +51,6 @@ const FORMAT_CARDS: FormatCard[] = [
     accent: "hsl(142, 71%, 45%)",
     bg: "hsl(142, 40%, 8%)",
     border: "hsl(142, 40%, 20%)",
-  },
-  {
-    id: "json",
-    label: "JSON",
-    description: "Structured data with metadata envelope. Ideal for programmatic processing.",
-    icon: FileJson,
-    accent: "hsl(221, 83%, 60%)",
-    bg: "hsl(221, 40%, 8%)",
-    border: "hsl(221, 40%, 20%)",
   },
   {
     id: "pdf",
@@ -257,9 +247,8 @@ export default function ExportCenter({ token, role, flash }: ExportCenterProps) 
   const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
   const [errorMsg, setErrorMsg] = useState("");
 
-  const isCoordinator = role === "TPC" || role === "ADMIN";
-
-  const availableReports = isCoordinator
+  // Admin can export everything. Coordinators (and students) only get the company/drives report.
+  const availableReports = role === "ADMIN"
     ? REPORT_CARDS
     : REPORT_CARDS.filter((r) => !r.coordinatorOnly);
 
@@ -436,7 +425,7 @@ export default function ExportCenter({ token, role, flash }: ExportCenterProps) 
       </div>
 
       {/* Coordinator notice */}
-      {!isCoordinator && (
+      {role !== "ADMIN" && (
         <div
           style={{
             marginTop: 24,
@@ -452,7 +441,7 @@ export default function ExportCenter({ token, role, flash }: ExportCenterProps) 
           }}
         >
           <Sparkles size={15} />
-          Some report types are restricted to Training & Placement Coordinators and Admins. Contact your TPC to request a full export.
+          Coordinators can export the company drives report. Student and application data exports are available to the Admin.
         </div>
       )}
     </div>
