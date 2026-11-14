@@ -247,8 +247,8 @@ export default function ExportCenter({ token, role, flash }: ExportCenterProps) 
   const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
   const [errorMsg, setErrorMsg] = useState("");
 
-  // Admin can export everything. Coordinators (and students) only get the company/drives report.
-  const availableReports = role === "ADMIN"
+  // Admin exports everything; a coordinator exports the same reports for their own department only (the server scopes the data).
+  const availableReports = role === "ADMIN" || role === "TPC"
     ? REPORT_CARDS
     : REPORT_CARDS.filter((r) => !r.coordinatorOnly);
 
@@ -425,7 +425,7 @@ export default function ExportCenter({ token, role, flash }: ExportCenterProps) 
       </div>
 
       {/* Coordinator notice */}
-      {role !== "ADMIN" && (
+      {role === "TPC" && (
         <div
           style={{
             marginTop: 24,
@@ -441,7 +441,7 @@ export default function ExportCenter({ token, role, flash }: ExportCenterProps) 
           }}
         >
           <Sparkles size={15} />
-          Coordinators can export the company drives report. Student and application data exports are available to the Admin.
+          Your exports contain only your own department&apos;s students, drives and applications.
         </div>
       )}
     </div>

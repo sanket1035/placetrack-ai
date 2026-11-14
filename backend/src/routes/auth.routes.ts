@@ -19,6 +19,7 @@ import { audit } from "../lib/audit.js";
 import { buildTpcInviteEmail, inviteMail } from "../services/inviteEmail.js";
 import { readinessForStudent } from "../services/studentReadiness.js";
 import { predictReadiness } from "../services/readiness.js";
+import { buildStudentTemplate, normHeader, readXlsxRows } from "../services/studentImport.js";
 
 export const authRouter = Router();
 
@@ -212,6 +213,62 @@ authRouter.patch("/students/:id", authenticate, authorize(UserRole.TPC, UserRole
   });
   await audit(request.auth!.userId, "UPDATE_STUDENT", "auth", { studentId: id });
   response.json(updated);
+});
+
+/** Excel template a coordinator fills in for the bulk import. */
+authRouter.get("/students/template", authenticate, authorize(UserRole.TPC, UserRole.ADMIN), attachScope, async (request, response) => {
+  const buffer = await buildStudentTemplate(request.scope!.department);
+  response.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+  response.setHeader("Content-Disposition", 'attachment; filename="students-import-template.xlsx"');
+  response.send(buffer);
+});
+
+/** A TPC adds one student to their own department (an admin can add to any). The student activates the account by signing in with Google using this email. */
+authRouter.post("/students", authenticate, authorize(UserRole.TPC, UserRole.ADMIN), attachScope, async (request, response) => {
+  const input = z.object({
+    name: z.string().trim().min(2),
+    email: z.string().trim().email(),
+    branch: z.string().trim().min(2).optional(),
+    cgpa: z.number().min(0).max(10),
+    graduationYear: z.number().int().min(2024).max(2035),
+    backlogs: z.number().int().min(0).max(10).default(0),
+    skills: z.array(z.string().trim().min(1)).default([])
+  }).parse(request.body);
+
+  const department = request.scope!.department;
+  const branch = department ?? input.branch;
+  if (!branch) return response.status(400).json({ error: "Choose a department for the student." });
+  if (department && input.branch && input.branch !== department) {
+    return response.status(403).json({ error: `You can only add students to ${department}.` });
+  }
+  const email = input.email.toLowerCase();
+  if (await prisma.user.findUnique({ where: { email } })) {
+    return response.status(409).json({ error: "This email is already registered." });
+  }
+
+  const readinessScore = predictReadiness({ cgpa: input.cgpa, aptitudeAccuracy: 0, testsTaken: 0, skills: input.skills.length, projects: 0, internships: 0, backlogs: input.backlogs }).score;
+  const user = await prisma.user.create({
+    data: {
+      email,
+      name: input.name,
+      role: "STUDENT",
+      student: { create: { onboarded: true, name: input.name, branch, cgpa: input.cgpa, graduationYear: input.graduationYear, skills: input.skills, backlogs: input.backlogs, readinessScore, mockTestCount: 0 } }
+    },
+    include: { student: { include: { user: { select: { id: true, email: true, lastLoginAt: true } } } } }
+  });
+  await audit(request.auth!.userId, "ADD_STUDENT", "auth", { studentId: user.student!.id });
+  response.status(201).json(user.student);
+});
+
+/** A TPC removes a student from their own department (an admin from any). Applications and test results go with the student. */
+authRouter.delete("/students/:id", authenticate, authorize(UserRole.TPC, UserRole.ADMIN), attachScope, async (request, response) => {
+  const id = getFirstString(request.params.id);
+  if (!id) return response.status(400).json({ error: "Invalid student id" });
+  const student = await prisma.student.findFirst({ where: { id, ...studentWhere(request.scope!.department) } });
+  if (!student) return response.status(404).json({ error: "Student not found in your department" });
+  await prisma.user.delete({ where: { id: student.userId } });
+  await audit(request.auth!.userId, "DELETE_STUDENT", "auth", { studentId: id });
+  response.json({ success: true });
 });
 
 // Admin User Management routes
@@ -429,16 +486,21 @@ const upload = multer({
 authRouter.post("/bulk-import", authenticate, authorize(UserRole.TPC, UserRole.ADMIN), attachScope, upload.single("file"), async (request, response) => {
   const file = request.file;
   if (!file) {
-    return response.status(400).json({ error: "No CSV file uploaded" });
+    return response.status(400).json({ error: "No file uploaded. Choose an .xlsx or .csv file." });
   }
 
-  const csvText = file.buffer.toString("utf-8");
-  const rows = parseCSV(csvText);
+  let rows: string[][];
+  try {
+    rows = /\.xlsx$/i.test(file.originalname) ? await readXlsxRows(file.buffer) : parseCSV(file.buffer.toString("utf-8"));
+  } catch {
+    return response.status(400).json({ error: "Could not read the file. Use the template (.xlsx) or a UTF-8 .csv." });
+  }
   if (rows.length < 2) {
-    return response.status(400).json({ error: "CSV is empty or missing data rows" });
+    return response.status(400).json({ error: "The file is empty or has no student rows." });
   }
 
-  const headers = rows[0].map(h => h.toLowerCase().trim());
+  const department = request.scope!.department;
+  const headers = rows[0].map(normHeader);
   const nameIdx = headers.indexOf("name");
   const emailIdx = headers.indexOf("email");
   const branchIdx = headers.indexOf("branch");
@@ -447,8 +509,13 @@ authRouter.post("/bulk-import", authenticate, authorize(UserRole.TPC, UserRole.A
   const backlogsIdx = headers.indexOf("backlogs");
   const skillsIdx = headers.indexOf("skills");
 
-  if (nameIdx === -1 || emailIdx === -1 || branchIdx === -1 || cgpaIdx === -1 || gradYearIdx === -1 || backlogsIdx === -1 || skillsIdx === -1) {
-    return response.status(400).json({ error: "CSV is missing required headers. Required: name, email, branch, cgpa, graduationYear, backlogs, skills." });
+  // A coordinator can leave out the branch column (their department is used). Backlogs and skills are optional.
+  const missing = [
+    nameIdx === -1 && "name", emailIdx === -1 && "email", cgpaIdx === -1 && "cgpa", gradYearIdx === -1 && "graduationYear",
+    !department && branchIdx === -1 && "branch"
+  ].filter(Boolean);
+  if (missing.length) {
+    return response.status(400).json({ error: `The file is missing column(s): ${missing.join(", ")}. Download the template and keep its header row.` });
   }
 
   let createdCount = 0;
@@ -463,24 +530,18 @@ authRouter.post("/bulk-import", authenticate, authorize(UserRole.TPC, UserRole.A
       continue;
     }
 
-    const maxIdx = Math.max(nameIdx, emailIdx, branchIdx, cgpaIdx, gradYearIdx, backlogsIdx, skillsIdx);
-    if (row.length <= maxIdx) {
-      failedCount++;
-      errors.push({ row: rowNum, reason: "Row has insufficient columns" });
-      continue;
-    }
+    const cell = (idx: number) => (idx >= 0 ? (row[idx] ?? "").trim() : "");
+    const name = cell(nameIdx);
+    const email = cell(emailIdx).toLowerCase();
+    const branch = cell(branchIdx) || department || "";
+    const cgpaStr = cell(cgpaIdx);
+    const gradYearStr = cell(gradYearIdx);
+    const backlogsStr = cell(backlogsIdx) || "0";
+    const skillsRaw = cell(skillsIdx);
 
-    const name = row[nameIdx].trim();
-    const email = row[emailIdx].trim().toLowerCase();
-    const branch = row[branchIdx].trim();
-    const cgpaStr = row[cgpaIdx].trim();
-    const gradYearStr = row[gradYearIdx].trim();
-    const backlogsStr = row[backlogsIdx].trim();
-    const skillsRaw = row[skillsIdx].trim();
-
-    if (!name || !email || !branch || !cgpaStr || !gradYearStr || !backlogsStr) {
+    if (!name || !email || !branch || !cgpaStr || !gradYearStr) {
       failedCount++;
-      errors.push({ row: rowNum, reason: "Missing required fields in columns" });
+      errors.push({ row: rowNum, reason: "Missing required fields (name, email, cgpa, graduationYear" + (department ? ")" : ", branch)") });
       continue;
     }
 
@@ -515,7 +576,6 @@ authRouter.post("/bulk-import", authenticate, authorize(UserRole.TPC, UserRole.A
     const skills = skillsRaw ? skillsRaw.split(",").map(s => s.trim()).filter(s => s !== "") : [];
 
     // A TPC may only import students of their own department.
-    const department = request.scope!.department;
     if (department && branch.toLowerCase() !== department.toLowerCase()) {
       failedCount++;
       errors.push({ row: rowNum, reason: `Branch "${branch}" is outside your department (${department})` });

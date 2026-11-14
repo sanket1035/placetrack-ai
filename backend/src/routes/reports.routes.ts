@@ -9,8 +9,7 @@ import { toCsv, toJson, exportFilename } from "../utils/exportUtils.js";
 export const reportsRouter = Router();
 reportsRouter.use(authenticate, authorize(UserRole.TPC, UserRole.ADMIN), attachScope);
 
-// Coordinators may only export the company/drives report; student and application data stays with the admin.
-const adminOnly = authorize(UserRole.ADMIN);
+// Coordinators export their own department's students, drives and placement data. Every query below is department-scoped.
 
 const dept = (request: { scope?: { department: string | null } }) => request.scope!.department;
 
@@ -132,7 +131,7 @@ function mapDriveJson(item: any) {
 
 // ─── Applications ─────────────────────────────────────────────────────────────
 
-reportsRouter.get("/applications.csv", adminOnly, async (request, response) => {
+reportsRouter.get("/applications.csv", async (request, response) => {
   const applications = await prisma.application.findMany({
     where: applicationWhere(dept(request)),
     include: {
@@ -157,7 +156,7 @@ reportsRouter.get("/applications.csv", adminOnly, async (request, response) => {
   response.send(csv);
 });
 
-reportsRouter.get("/applications.json", adminOnly, async (request, response) => {
+reportsRouter.get("/applications.json", async (request, response) => {
   const applications = await prisma.application.findMany({
     where: applicationWhere(dept(request)),
     include: {
@@ -183,7 +182,7 @@ reportsRouter.get("/applications.json", adminOnly, async (request, response) => 
 
 // ─── Students ─────────────────────────────────────────────────────────────────
 
-reportsRouter.get("/students.csv", adminOnly, async (request, response) => {
+reportsRouter.get("/students.csv", async (request, response) => {
   const students = await prisma.student.findMany({
     where: studentWhere(dept(request)),
     include: {
@@ -204,7 +203,7 @@ reportsRouter.get("/students.csv", adminOnly, async (request, response) => {
   response.send(csv);
 });
 
-reportsRouter.get("/students.json", adminOnly, async (request, response) => {
+reportsRouter.get("/students.json", async (request, response) => {
   const students = await prisma.student.findMany({
     where: studentWhere(dept(request)),
     include: {
@@ -271,7 +270,7 @@ reportsRouter.get("/drives.json", async (request, response) => {
 
 // ─── Placement Summary (JSON only) ────────────────────────────────────────────
 
-reportsRouter.get("/summary.json", adminOnly, async (request, response) => {
+reportsRouter.get("/summary.json", async (request, response) => {
   const [
     totalStudents,
     totalDrives,

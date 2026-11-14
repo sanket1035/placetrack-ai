@@ -236,6 +236,49 @@ describe("PlaceTrack AI - Backend Integration Tests", () => {
       expect(asStudent.status).toBe(403);
     });
 
+    it("adds, imports, exports and removes students of their own department only", async () => {
+      const added = await request(app).post("/api/auth/students").set("Authorization", `Bearer ${tpcToken}`)
+        .send({ name: "Added Student", email: "Added.Student@Example.com", cgpa: 7.8, graduationYear: 2027 });
+      expect(added.status).toBe(201);
+      expect(added.body.branch).toBe("Computer Science");
+
+      const duplicate = await request(app).post("/api/auth/students").set("Authorization", `Bearer ${tpcToken}`)
+        .send({ name: "Added Again", email: "added.student@example.com", cgpa: 7, graduationYear: 2027 });
+      expect(duplicate.status).toBe(409);
+
+      const elsewhere = await request(app).post("/api/auth/students").set("Authorization", `Bearer ${tpcToken}`)
+        .send({ name: "Wrong Dept", email: "wrong.dept@example.com", branch: "Mechanical", cgpa: 7, graduationYear: 2027 });
+      expect(elsewhere.status).toBe(403);
+
+      // Branch column may be left out by a coordinator; their department is used.
+      const csv = "Name,Email,CGPA,Graduation Year\nCsv One,csv.one@example.com,8.1,2027\nCsv Two,csv.two@example.com,x,2027";
+      const imported = await request(app).post("/api/auth/bulk-import").set("Authorization", `Bearer ${tpcToken}`).attach("file", Buffer.from(csv), "students.csv");
+      expect(imported.status).toBe(200);
+      expect(imported.body.created).toBe(1);
+      expect(imported.body.failed).toBe(1);
+      const csvOne = await prisma.student.findFirstOrThrow({ where: { name: "Csv One" } });
+      expect(csvOne.branch).toBe("Computer Science");
+
+      const template = await request(app).get("/api/auth/students/template").set("Authorization", `Bearer ${tpcToken}`);
+      expect(template.status).toBe(200);
+
+      const exported = await request(app).get("/api/reports/students.csv").set("Authorization", `Bearer ${tpcToken}`);
+      expect(exported.status).toBe(200);
+      expect(exported.text).toContain("Added Student");
+      expect(exported.text).not.toContain("Mechanical");
+
+      const removed = await request(app).delete(`/api/auth/students/${added.body.id}`).set("Authorization", `Bearer ${tpcToken}`);
+      expect(removed.status).toBe(200);
+      expect(await prisma.student.findUnique({ where: { id: added.body.id } })).toBeNull();
+
+      const mech = await prisma.student.findFirstOrThrow({ where: { branch: "Mechanical" } });
+      const outside = await request(app).delete(`/api/auth/students/${mech.id}`).set("Authorization", `Bearer ${tpcToken}`);
+      expect(outside.status).toBe(404);
+
+      const asStudent = await request(app).delete(`/api/auth/students/${mech.id}`).set("Authorization", `Bearer ${studentToken}`);
+      expect(asStudent.status).toBe(403);
+    });
+
     it("only lists applications of their own department", async () => {
       const response = await request(app).get("/api/applications").set("Authorization", `Bearer ${tpcToken}`);
       expect(response.status).toBe(200);
