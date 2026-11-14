@@ -152,10 +152,10 @@ export function Dashboard() {
 
   const role = user?.role ?? "STUDENT";
   useEffect(() => {
-    if (role === "TPC" && !(["Department Overview", "Students", "Applications", "Drive Creator", "Analytics", "Mock Tests", "Export Center"] as View[]).includes(view)) setView("Department Overview");
+    if (role === "TPC" && !(["Department Overview", "Students", "Applications", "Opportunities", "Drive Creator", "Analytics", "Mock Tests", "Export Center"] as View[]).includes(view)) setView("Department Overview");
   }, [role, view]);
   const nav = useMemo(() => {
-    if (role === "TPC") return ["Department Overview", "Students", "Applications", "Drive Creator", "Analytics", "Mock Tests", "Export Center"] as View[];
+    if (role === "TPC") return ["Department Overview", "Students", "Applications", "Opportunities", "Drive Creator", "Analytics", "Mock Tests", "Export Center"] as View[];
     const base: View[] = ["Overview", "Applications", "Opportunities", "Resume AI", "Aptitude", "Profile"];
     if (role !== "STUDENT") base.push("Interview", "Drive Creator", "Analytics");
     if (role === "STUDENT") base.push("Interview", "Practice", "Off-Campus");

@@ -6,7 +6,7 @@ export const ROLE_LABEL: Record<Role, string> = {
   ADMIN: "Administrator"
 };
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
+export const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
 
 export type NotificationItem = {
   id: string;
