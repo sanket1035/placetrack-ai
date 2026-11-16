@@ -1,305 +1,298 @@
+<div align="center">
+
 # PlaceTrack AI
 
-**Enterprise-grade Placement Management & Student Readiness Platform for Engineering Colleges**
+**One platform for the whole campus placement season.**
 
-[![Live Demo](https://img.shields.io/badge/Live_Demo-00C7B7?style=flat-square&logo=vercel&logoColor=white)](https://frontend-umber-one-zuhj8ueccq.vercel.app/)
-[![Next.js](https://img.shields.io/badge/Next.js-15-black?style=flat-square&logo=next.js&logoColor=white)](https://nextjs.org/)
+Drives, eligibility, applications, readiness and reports for engineering colleges, in one place.
+
+[![Live demo](https://img.shields.io/badge/Live_demo-placetrack--ai.vercel.app-1B3A0A?style=flat-square&logo=vercel&logoColor=white)](https://placetrack-ai.vercel.app)
+[![Next.js](https://img.shields.io/badge/Next.js-15-000000?style=flat-square&logo=next.js&logoColor=white)](https://nextjs.org/)
 [![React](https://img.shields.io/badge/React-19-20232a?style=flat-square&logo=react&logoColor=61DAFB)](https://react.dev/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?style=flat-square&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
-[![Express](https://img.shields.io/badge/Express-v5-404d59?style=flat-square&logo=express&logoColor=61DAFB)](https://expressjs.com/)
-[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-18-316192?style=flat-square&logo=postgresql&logoColor=white)](https://www.postgresql.org/)
-[![Prisma](https://img.shields.io/badge/Prisma-6-2D3748?style=flat-square&logo=prisma&logoColor=white)](https://www.prisma.io/)
-[![Gemini AI](https://img.shields.io/badge/Gemini-AI-4285F4?style=flat-square&logo=google&logoColor=white)](https://ai.google.dev/)
-[![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?style=flat-square&logo=docker&logoColor=white)](https://www.docker.com/)
-[![Vitest](https://img.shields.io/badge/Vitest-Unit%20Tests-6E9F18?style=flat-square&logo=vitest&logoColor=white)](https://vitest.dev/)
-[![License](https://img.shields.io/badge/License-MIT-yellow?style=flat-square)](LICENSE)
-[![API Health](https://img.shields.io/badge/API-Health%20Check-brightgreen?style=flat-square)](https://your-backend-url/health)
+[![Express](https://img.shields.io/badge/Express-5-404d59?style=flat-square&logo=express&logoColor=white)](https://expressjs.com/)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Prisma_6-316192?style=flat-square&logo=postgresql&logoColor=white)](https://www.prisma.io/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow?style=flat-square)](LICENSE)
 
-> **[🚀 Live Demo → frontend-umber-one-zuhj8ueccq.vercel.app](https://frontend-umber-one-zuhj8ueccq.vercel.app/)**
+[Live demo](https://placetrack-ai.vercel.app) · [Features](#features) · [Architecture](#architecture) · [Getting started](#getting-started) · [API](#api-overview) · [Deployment](#deployment)
 
-### Quick Links
-- 🚀 [Live Demo](https://frontend-umber-one-zuhj8ueccq.vercel.app/)
-- 🩺 [Health Check Status](https://your-backend-url/health)
-- 📖 [API Documentation](#api-reference)
-
-A full-stack placement management platform enabling students to track applications, analyze resumes with AI, practice aptitude tests, and prepare for interviews — while coordinators and admins manage drives, pipelines, and reports from a unified dashboard.
+</div>
 
 ---
+
+## Overview
+
+Most placement cells run on WhatsApp groups and spreadsheets. Drive details get lost, eligibility is checked by hand, nobody knows who actually applied on the company form, and the numbers are put together at the end of the season.
+
+PlaceTrack AI moves that work into one system:
+
+1. A coordinator publishes a drive once, with package, location, eligible departments and deadline.
+2. Every eligible student gets an email. Students only see drives they qualify for.
+3. Students apply on the company's own form, then confirm **"I have applied"** in PlaceTrack.
+4. The placement cell tracks every application through shortlisting, interviews and selection, and exports reports at any time.
+
+Students also get a resume score, aptitude mock tests, interview practice and a private tracker for off-campus applications.
+
+It is built for KKWagh (KKWIEER) and is running now. Sign-in is Google only, and student sign-in can be limited to the college domain.
 
 ## Screenshots
 
-| Dashboard | Applications |
-|:---------:|:------------:|
-| ![Dashboard](screenshots/dashboard.png) | ![Applications](screenshots/applications.png) |
+> All screenshots use demonstration data. No real student data appears.
 
-| Opportunities | Resume AI |
-|:-------------:|:---------:|
-| ![Opportunities](screenshots/opportunities.png) | ![Resume AI](screenshots/resume-ai.png) |
+| Sign in | Student home |
+|:--:|:--:|
+| ![Sign in](docs/screenshots/sign-in.jpg) | ![Student home](docs/screenshots/student-home.jpg) |
 
-| Aptitude Test | Profile |
-|:-------------:|:-------:|
-| ![Aptitude](screenshots/aptitude.png) | ![Profile](screenshots/profile.png) |
+| Opportunities | Applications |
+|:--:|:--:|
+| ![Opportunities](docs/screenshots/opportunities.jpg) | ![Applications](docs/screenshots/applications.jpg) |
 
-| Interview Coach | AI Feedback |
-|:---------------:|:-----------:|
-| ![Interview](screenshots/interview.png) | ![AI Feedback](screenshots/interview-feedback.png) |
+| Interview practice | Off-campus tracker |
+|:--:|:--:|
+| ![Interview practice](docs/screenshots/interview-practice.jpg) | ![Off-campus tracker](docs/screenshots/off-campus.jpg) |
 
----
+| Drive creator (coordinator) | Analytics (coordinator) |
+|:--:|:--:|
+| ![Drive creator](docs/screenshots/drive-creator.jpg) | ![Analytics](docs/screenshots/analytics.jpg) |
 
 ## Features
 
-**Student Portal**
-- Readiness score ring computed from CGPA, aptitude, coding, communication, projects, internships, and mock counts
-- Job board with real-time eligibility check and suitability score per drive
-- AI-powered resume analysis via Google Gemini with heuristic fallback
-- Timed aptitude mock tests with server-side grading and section-wise feedback
-- AI interview coach generating role-specific questions with answer evaluation
-- In-app notifications for application status changes and interview schedules
-- **90 skills across 4 categories** (Technical Core, Tools & Platforms, Core Engineering, Soft Skills) covering all 10 branches — CS, IT, AI/DS, Electronics, Electrical, Mechanical, Civil, Chemical, and more
+### Students
+- **Eligible drives only.** Branch, CGPA, backlogs and batch are checked automatically, with a suitability score per drive.
+- **Application tracking.** A timeline for every application, from applied to selected, plus deadline reminders and in-app notifications.
+- **External apply flow.** Apply on the company's own form, then confirm in the app.
+- **Readiness score.** A transparent 0-100 score built from academics, aptitude, practice, projects, internships, skills and backlogs.
+- **Resume analysis.** Upload a PDF or DOCX and get a score based on what is actually written in it.
+- **Aptitude mock tests.** Timed tests with answer review and section-wise results.
+- **Interview practice.** Technical and soft-skill questions for every department, with feedback on your answer.
+- **Off-campus tracker.** A private list of outside jobs and internships. Coordinators and admins cannot see it.
+- **Profile card export.** Download a shareable PNG of your readiness profile.
 
-**Coordinator & Admin Portal**
-- Create and manage placement drives with branch filters, CGPA caps, backlog limits, and deadlines
-- Progress student applications through a strict pipeline: `APPLIED → SHORTLISTED → APTITUDE_CLEARED → TECHNICAL_ROUND → HR_ROUND → SELECTED / REJECTED`
-- Schedule interviews and push notifications to candidates
-- Export full student registry and application data as CSV reports
-- Admin user management with audit trail logging
+### Coordinators (Training & Placement Coordinator, one department each)
+- **Drives.** See every drive of the department, create new ones (single package or a range such as 3.5-5 LPA) and delete them.
+- **Students.** Add a student, edit details, remove a student, import a list from **Excel or CSV** (with a template) and export the list.
+- **Applications.** Move applications through the pipeline and schedule interviews.
+- **Mock tests.** Upload aptitude tests from an Excel template.
+- **Reports.** Export students, applications, drives and a placement summary as CSV or PDF. Everything is limited to the coordinator's own department.
+- **Analytics.** Placement rate, package statistics and department charts.
 
----
+### Admin (Training & Placement Officer)
+- Everything a coordinator can do, across **all** departments.
+- **Invite coordinators** by email and assign them a department. Coordinators are never self-registered.
+- Manage users, load the starter question bank and review the audit trail.
+
+### Access at a glance
+
+| | Student | Coordinator | Admin |
+|---|:-:|:-:|:-:|
+| See eligible drives | ✅ | own department | all |
+| Apply and track applications | ✅ | | |
+| Create and delete drives | | own department | all |
+| Add, import, edit and remove students | | own department | all |
+| Export students, drives and applications | | own department | all |
+| Invite coordinators and manage users | | | ✅ |
+| Private off-campus tracker | ✅ (only the student) | | |
 
 ## Architecture
 
-```
+```mermaid
 graph TD
-    Client[Next.js Frontend] <-->|JSON + JWT Auth| Express[Express.js Server]
-    Express <-->|Prisma Client| DB[(PostgreSQL on Neon)]
-    Express <-->|REST API| Gemini[Google Gemini AI]
-    Express -->|Fallback| Heuristics[Regex Heuristic Parser]
+    Browser["Next.js frontend<br/>(Vercel)"] -->|"JSON + JWT"| API["Express API<br/>(Render)"]
+    Browser -->|"Google sign-in"| Google["Google Identity"]
+    API -->|"verify Google token"| Google
+    API -->|"Prisma"| DB[("PostgreSQL")]
+    API -->|"transactional email"| Mail["Brevo / SMTP"]
+    API -->|"feedback and question generation"| LLM["Groq or Gemini"]
+    API -->|"company logos"| Cloud["Cloudinary (optional)"]
 ```
 
-**Monorepo Structure**
+**How sign-in works.** The browser gets a Google ID token. The API verifies it, then issues its own signed JWT (12 hours) that carries the user id and role. No passwords are stored. Roles are checked on the server for every request, and a coordinator's department scope is applied to every query, not only hidden in the UI.
 
-```
+### Tech stack
+
+| Layer | Choice |
+|---|---|
+| Frontend | Next.js 15 (App Router), React 19, TypeScript, plain CSS variables, Recharts, Framer Motion |
+| Backend | Node.js 20+, Express 5, TypeScript, Zod validation |
+| Database | PostgreSQL through Prisma 6 |
+| Auth | Google Sign-In, JWT, role-based access control |
+| Email | Brevo HTTPS API, or any SMTP server through Nodemailer |
+| AI | Groq (preferred) or Google Gemini for interview feedback and question generation. Resume scoring is deterministic and does not use an LLM. |
+| Files | Excel/CSV parsing with ExcelJS, PDF and DOCX resume parsing, PDF reports with jsPDF |
+| Tests | Jest and Supertest |
+
+### Project structure
+
+```text
+.
 ├── backend/
-│   ├── prisma/
-│   │   ├── schema.prisma          # Database schema
-│   │   └── seed.ts                # 150-student seed script
+│   ├── prisma/                  # schema.prisma and the demo seed script
 │   ├── src/
-│   │   ├── lib/                   # Prisma client & audit logger
-│   │   ├── middleware/            # JWT auth & RBAC guards
-│   │   ├── routes/                # REST endpoints by resource
-│   │   ├── services/              # Eligibility, readiness & AI integrations
-│   │   ├── types/                 # TypeScript annotations
-│   │   └── server.ts              # Server entrypoint with auto-seed
-│   └── tests/                     # Vitest unit test suite
-│
+│   │   ├── lib/                 # config, Prisma client, Google verification, department scope, audit log
+│   │   ├── middleware/          # authentication, role guards, rate limiting, error handler
+│   │   ├── routes/              # auth, drives, applications, tests, reports, ai, off-campus, ...
+│   │   ├── services/            # eligibility, readiness, resume scoring, mail, imports
+│   │   └── jobs/                # daily deadline reminders
+│   └── tests/                   # Jest integration and unit tests
 ├── frontend/
 │   └── src/
-│       ├── app/                   # Next.js App Router
-│       ├── components/            # Dashboard, Resume AI, UI components
-│       └── lib/                   # API wrappers, types, credentials
-│
-├── docker-compose.yml             # PostgreSQL container (local dev)
-├── package.json                   # Monorepo workspaces config
-└── .env.example                   # Environment variable template
+│       ├── app/                 # routes: landing, login, practice, privacy, terms
+│       ├── components/          # dashboard views and shared UI
+│       └── lib/                 # API client, departments, helpers
+├── docs/screenshots/            # README images (demo data)
+└── docker-compose.yml           # local PostgreSQL
 ```
 
----
+## How the scores work
 
-## Core Algorithms
+### Placement eligibility
+A student can apply only if all four checks pass: CGPA at or above the drive minimum, active backlogs within the limit, department in the allowed list, and the right graduation year. Eligible students get a suitability score from 50 to 100 using the CGPA margin (up to 15), skill overlap with the role description (up to 30) and department specificity (up to 15).
 
-### Student Readiness Predictor
+### Readiness score (0-100)
 
-A backend scoring engine that maps academic and assessment metrics to a placement probability score:
+| Part | Points |
+|---|---|
+| Academics | CGPA / 10 x 30 (max 30) |
+| Aptitude | average mock-test accuracy x 0.25 (max 25) |
+| Practice | 1 point per mock test, up to 5 tests (max 5) |
+| Projects | 5 per project, up to 3 (max 15) |
+| Internships | 7.5 per internship, up to 2 (max 15) |
+| Skills | 1.25 per skill, up to 8 (max 10) |
+| Backlogs | minus 5 per active backlog, at most minus 20 |
 
-```
-Readiness Score = clamp(
-  (CGPA / 10 × 22) +
-  (Aptitude × 0.18) +
-  (Coding × 0.22) +
-  (Communication × 0.15) +
-  (Projects × 4) +
-  (Internships × 5) +
-  (Mock Tests × 1.2) -
-  (Active Backlogs × 7)
-)
-```
+80 and above is **Placement Ready**, 65 to 79 is **Nearly Ready**, below 65 is **Needs Preparation**. Every input comes from something the student actually did or entered.
 
-| Range | Status |
-|-------|--------|
-| >= 80 | Placement Ready |
-| 65 – 79 | Nearly Ready |
-| < 65 | Needs Focused Preparation |
+### Resume score (0-100)
+Measured from the extracted text only: contact and links (10), education (15), technical skills (20), projects (20), experience (15), certifications and achievements (10), and impact and writing quality (10). A document that does not look like a resume cannot score well, and keyword stuffing cannot reach 100.
 
-### Placement Eligibility Engine
+## API overview
 
-Hard constraints validated before a student can apply to any drive:
+All routes are under `/api`. Protected routes need `Authorization: Bearer <jwt>`. `GET /health` reports database connectivity.
 
-- CGPA >= drive minimum
-- Active backlogs <= drive maximum
-- Branch within allowed departments
-- Graduation year matches drive cohort
+| Area | Endpoints | Who |
+|---|---|---|
+| Auth | `POST /auth/google`, `GET /auth/me`, `PATCH /auth/profile` | Public, then any user |
+| Students | `GET/POST /auth/students`, `PATCH/DELETE /auth/students/:id`, `GET /auth/students/template`, `POST /auth/bulk-import` | Coordinator, Admin |
+| Users | `GET/PATCH/DELETE /auth/users`, `POST /auth/users/tpc` | Admin |
+| Drives | `GET /drives`, `GET /drives/search`, `POST/PATCH/DELETE /drives` | Any user to read, Coordinator or Admin to write |
+| Applications | `GET/POST /applications`, `PATCH /applications/:id/status`, `POST /applications/:id/interview` | Student applies, Coordinator or Admin manages |
+| Aptitude tests | `GET /tests`, `POST /tests/:id/submit`, `POST /tests/import`, `GET /tests/template` | Students take, Coordinator or Admin manage |
+| Practice questions | `GET /questions`, `POST /questions/generate`, `POST /questions/:id/attempt` | Any user |
+| AI | `POST /ai/resume/upload`, `POST /ai/resume/text`, `POST /ai/interview/feedback` | Any user |
+| Off-campus | `GET/POST/PATCH/DELETE /off-campus` | Student only |
+| Reports | `/reports/students`, `/applications`, `/drives` (`.csv` or `.json`), `/reports/summary.json`, `/reports/analytics`, `/reports/department-overview` | Coordinator, Admin |
+| Other | `GET /dashboard`, `GET/PATCH /notifications`, `GET /public/stats` | Varies |
 
-Eligible applications receive a **suitability score (50–100)** based on academic margin (+15), skill keyword overlap (+30), and branch specificity (+15).
-
-### AI Resume Analyzer
-
-Resume PDFs are parsed via `pdf-parse` into raw text, then sent to Google Gemini (`gemini-2.5-flash`) with a structured JSON prompt. Response fields: `score`, `skills`, `sectionHits`, `suggestions`, `contactComplete`. A regex heuristic fallback activates automatically if the API key is absent or rate-limited — the platform remains fully functional offline.
-
----
-
-## API Reference
-
-### Quick Overview
-- **Backend Base URL**: `http://localhost:4000` (Local) / `https://your-backend-url` (Production)
-- **Health Check**: `GET /health` → returns `{ "status": "ok", "database": "connected" }`
-- **Authentication**: All protected endpoints require `Authorization: Bearer <jwt_token>` header.
-
-### Endpoints Table
-
-| Method | Endpoint | Auth | Description |
-|--------|----------|------|-------------|
-| GET | `/health` | Public | Database connectivity health check |
-| POST | `/api/auth/login` | Public | Login and receive signed JWT |
-| POST | `/api/auth/signup` | Public | Register student or coordinator |
-| GET | `/api/auth/me` | User | Fetch profile and unread notifications |
-| PATCH | `/api/auth/me/student` | Student | Update profile and recalculate readiness |
-| GET | `/api/auth/users` | Admin | List all registered accounts |
-| DELETE | `/api/auth/users/:id` | Admin | Delete account and dependencies |
-| GET | `/api/dashboard` | User | Role-specific aggregated dashboard data |
-| GET | `/api/drives` | User | List drives with eligibility state per student |
-| POST | `/api/drives` | Coordinator, Admin | Create a placement drive |
-| GET | `/api/applications` | User | Query applications (owner-scoped for students) |
-| POST | `/api/applications` | Student | Submit eligibility-filtered application |
-| PATCH | `/api/applications/:id/status` | Coordinator, Admin | Advance application pipeline stage |
-| POST | `/api/applications/:id/interview` | Coordinator, Admin | Schedule interview and notify student |
-| GET | `/api/tests` | User | List all aptitude tests |
-| GET | `/api/tests/:id` | User | Fetch test details and questions |
-| POST | `/api/tests/:id/submit` | Student | Submit answers and record scored result |
-| POST | `/api/ai/resume/text` | Student | Analyze raw text resume |
-| POST | `/api/ai/resume/upload` | Student | Extract and analyze PDF resume |
-| POST | `/api/ai/interview` | User | Generate role-specific interview questions |
-| POST | `/api/ai/interview/feedback` | User | Evaluate answer with score and model response |
-| GET | `/api/reports/applications.csv` | Coordinator, Admin | Export application data as CSV |
-| GET | `/api/reports/students.csv` | Coordinator, Admin | Export student performance registry as CSV |
-
----
-
-## Getting Started
+## Getting started
 
 ### Prerequisites
+- Node.js 20 or newer
+- Docker (for a local PostgreSQL), or any PostgreSQL database
+- A Google OAuth client ID (Google Cloud Console, "Web application")
 
-- Node.js v20+
-- Docker Desktop (for local PostgreSQL)
-
-### Step 1 — Environment Setup
-
-Copy `.env.example` templates in both `backend/` and `frontend/` directories:
+### 1. Install
 
 ```bash
-# Copy backend environment configuration template
-cp backend/.env.example backend/.env
+git clone https://github.com/sanket1035/placetrack-ai.git
+cd placetrack-ai
+npm install
+```
 
-# Copy frontend environment configuration template
+### 2. Configure
+
+```bash
+cp backend/.env.example backend/.env
 cp frontend/.env.example frontend/.env.local
 ```
 
-#### Backend Environment Variables (`backend/.env.example`)
+In the Google Cloud Console, add `http://localhost:3000` as an authorised JavaScript origin, then set the client id in both files.
 
-| Variable | Description |
-|----------|-------------|
-| `PORT` | Express REST API server port (default: `4000`) |
-| `DATABASE_URL` | PostgreSQL pooled connection string for Prisma Client |
-| `DIRECT_URL` | Direct PostgreSQL connection string for Prisma migrations |
-| `JWT_SECRET` | Secret string for signing and verifying JWT tokens |
-| `GEMINI_API_KEY` | Google Gemini API key for AI resume parsing & interview feedback |
-| `FRONTEND_URL` | Allowed CORS origin & email link base URL (default: `http://localhost:3000`) |
+**Backend (`backend/.env`)**
 
-#### Frontend Environment Variables (`frontend/.env.example`)
+| Variable | Purpose |
+|---|---|
+| `DATABASE_URL`, `DIRECT_URL` | PostgreSQL connection strings (pooled and direct) |
+| `JWT_SECRET` | Signing key for session tokens. Use 32+ random characters in production. |
+| `GOOGLE_CLIENT_ID` | Your Google OAuth client id |
+| `ADMIN_EMAILS` | Comma-separated emails that become **Admin** on first sign-in |
+| `ALLOWED_STUDENT_EMAIL_DOMAINS` | Optional. For example `kkwagh.edu.in` limits student sign-in to the college domain. Leave empty to allow any Google account. |
+| `FRONTEND_URL` | Allowed CORS origin and the base URL for email links |
+| `GROQ_API_KEY` or `GEMINI_API_KEY` | AI provider for interview feedback and question generation (optional) |
+| `BREVO_API_KEY` or `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS` | Email delivery (optional) |
+| `EMAIL_FROM` | Sender shown on emails, for example `PlaceTrack AI <no-reply@example.com>` |
+| `CLOUDINARY_*` | Optional, for company logo uploads |
+| `AUTO_SEED` | `true` fills an **empty** database with demo data on first start |
+| `SHOW_PUBLIC_STATS` | `true` shows real aggregate numbers on the landing page |
+| `TRUST_PROXY_HOPS` | Number of reverse proxies in front of the API (default `1`) |
 
-| Variable | Description |
-|----------|-------------|
-| `NEXT_PUBLIC_API_URL` | Backend REST API base URL (default: `http://localhost:4000`) |
+**Frontend (`frontend/.env.local`)**
 
+| Variable | Purpose |
+|---|---|
+| `NEXT_PUBLIC_API_URL` | Backend base URL, for example `http://localhost:4000` |
+| `NEXT_PUBLIC_GOOGLE_CLIENT_ID` | The same Google OAuth client id |
+| `NEXT_PUBLIC_CONTACT_EMAIL` | Optional, shown on the landing page |
 
-### Step 2 — Start Database
+### 3. Database
 
 ```bash
-docker compose up -d
+docker compose up -d                 # local PostgreSQL
+npm run prisma:push -w backend       # create the tables
 ```
 
-### Step 3 — Install, Migrate & Seed
+Optional demo data: set `AUTO_SEED=true` before the first start, or run `npm run prisma:seed -w backend`.
 
-```bash
-# Install all workspace dependencies
-npm install
-
-# Push Prisma schema to database
-npm run prisma:push -w backend
-
-# Seed with 150 student profiles, companies, drives, and tests
-npm run prisma:seed -w backend
-```
-
-### Step 4 — Run Development Servers
+### 4. Run
 
 ```bash
 npm run dev
 ```
 
 | Service | URL |
-|---------|-----|
+|---|---|
 | Frontend | http://localhost:3000 |
-| Backend API | http://localhost:4000 |
-| Health Check | http://localhost:4000/health |
+| API | http://localhost:4000 |
+| Health | http://localhost:4000/health |
 
-Demo accounts are pre-seeded. Refer to `backend/prisma/seed.ts` for login credentials.
-
----
+Sign in with the Google account listed in `ADMIN_EMAILS` to get the admin console. Invite a coordinator from **Users**, and they sign in with the invited email.
 
 ## Testing
 
 ```bash
-# Run backend unit tests
-npm test
-
-# TypeScript type check across all packages
-npm run typecheck
+npm run typecheck        # backend and frontend
+npm test                 # backend Jest suite
 ```
 
----
+The integration tests need a **separate, disposable** PostgreSQL database. Set `TEST_DATABASE_URL` in `backend/.env` before running them. They empty their tables.
+
+## Deployment
+
+| Part | Where | Notes |
+|---|---|---|
+| Frontend | Vercel | Root directory `frontend`. Set `NEXT_PUBLIC_API_URL` and `NEXT_PUBLIC_GOOGLE_CLIENT_ID`. |
+| API | Render (or any Node host) | Build `npm install && npm run build -w backend`, start `npm run start -w backend`. Set the backend variables above. |
+| Database | Any managed PostgreSQL | Run `npm run prisma:push -w backend` once against it. |
+
+Tips:
+- Free hosts that block outbound SMTP ports work fine with **Brevo's HTTPS API**: set `BREVO_API_KEY`.
+- Free API tiers go to sleep when idle. Point an uptime monitor at `/health` to keep the first request fast.
+- Add your deployed frontend URL as an authorised JavaScript origin in the Google OAuth client.
 
 ## Security
 
-- JWT authentication with `HS256`, 12-hour expiry
-- Role-based access control (`STUDENT`, `COORDINATOR`, `ADMIN`) enforced via middleware
-- Helmet for secure HTTP headers
-- Rate limiting: 300 requests / 60 seconds per IP on all `/api/*` routes
-- Zod schema validation on all request bodies before database calls
-- In-memory PDF processing via `multer.memoryStorage()` — no resume files written to disk
-- `Cache-Control: no-store` on all API responses
+- Google sign-in only. The ID token is verified on the server and no passwords are stored.
+- Role-based access control on every route, with **department scoping** applied to queries for coordinators.
+- Coordinators are invited by an admin. They cannot self-register.
+- A student's off-campus tracker is visible only to that student.
+- Zod validation on request bodies, Helmet headers and rate limiting (300 requests per minute per IP on `/api`).
+- Resume files are processed in memory and not written to disk.
+- An audit log records sensitive actions such as imports, exports and deletions.
+- Privacy Policy and Terms of Use pages are part of the app.
 
----
+## Contributing
 
-## Database Schema
-
-| Model | Purpose | Key Indexes |
-|-------|---------|-------------|
-| `User` | Auth entity with role | Unique email |
-| `Student` | Academic profile | `[branch, graduationYear]`, `[readinessScore]` |
-| `Coordinator` | Staff department info | Unique userId |
-| `Company` | Recruiter registry | Unique name |
-| `PlacementDrive` | Job opening with constraints | `[status, deadline]`, `[graduationYear]` |
-| `Application` | Student-Drive relationship | Unique `[studentId, driveId]`, `[status]` |
-| `Interview` | Scheduled interview per application | Unique applicationId |
-| `AptitudeTest` | Test blueprint | — |
-| `Question` | MCQ per test | — |
-| `TestResult` | Submission scores and metrics | Unique `[studentId, testId]` |
-| `Notification` | In-app user alerts | — |
-| `ActivityLog` | Admin audit trail | `[timestamp]`, `[resource]` |
-| `ResumeAnalysis` | Persisted AI scan results | `[userId, createdAt]` |
-
----
+Issues and pull requests are welcome. Please read [CONTRIBUTING.md](CONTRIBUTING.md) and the [Code of Conduct](CODE_OF_CONDUCT.md) first, and open a pull request instead of pushing to `main`.
 
 ## License
 
-MIT © [Sanket Chaudhari](https://github.com/sanket1035)
+[MIT](LICENSE) © [Sanket Chaudhari](https://github.com/sanket1035)
